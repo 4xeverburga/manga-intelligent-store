@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { InsightsSidebar } from "./InsightsSidebar";
 import { CartSidebar } from "./CartSidebar";
-import { useCartStore } from "@/stores/cart";
+import { useCartStore, selectTotalItems } from "@/stores/cart";
 
 export function DashboardHeader() {
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
-  const itemCount = useCartStore((s) => s.items.length);
+  const itemCount = useCartStore(selectTotalItems);
 
   return (
     <header className="flex h-12 items-center justify-between border-b border-border/40 bg-surface px-4">

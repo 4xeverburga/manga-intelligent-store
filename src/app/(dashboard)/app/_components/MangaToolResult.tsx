@@ -58,7 +58,7 @@ export function MangaToolResult({ results }: { results: MangaResult[] }) {
                     mangaId: manga.id,
                     title: manga.title,
                     imageUrl: manga.imageUrl,
-                    price: 12.99,
+                    price: 1.0,
                     quantity: 1,
                     source: "ai-suggested",
                     addedAt: new Date(),

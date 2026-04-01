@@ -124,7 +124,7 @@ export function SimilarModal({ mangaId, onClose }: SimilarModalProps) {
                               mangaId: manga.id,
                               title: manga.title,
                               imageUrl: manga.imageUrl,
-                              price: 29.9,
+                              price: 1.0,
                               quantity: 1,
                               source: "manual",
                               addedAt: new Date(),

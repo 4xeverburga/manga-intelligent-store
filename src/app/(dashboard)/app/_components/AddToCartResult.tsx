@@ -13,7 +13,7 @@ export function AddToCartResult({ result }: { result: CartResult }) {
       addItem({
         mangaId: result.mangaId,
         title: result.title,
-        price: 12.99,
+        price: 1.0,
         quantity: 1,
         source: "ai-suggested",
         addedAt: new Date(),
