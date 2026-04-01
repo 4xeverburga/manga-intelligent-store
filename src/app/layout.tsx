@@ -14,9 +14,20 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Hablemos Manga — Tu siguiente manga favorito, recomendado por IA",
+  title: {
+    default: "Hablemos Manga — Recomendaciones AI Personalizadas",
+    template: "%s | Hablemos Manga",
+  },
   description:
     "Descubre tu próximo manga favorito con recomendaciones personalizadas por IA. Chat inteligente, búsqueda semántica y carrito asistido.",
+  keywords: [
+    "manga",
+    "recomendaciones",
+    "IA",
+    "inteligencia artificial",
+    "tienda manga",
+    "anime",
+  ],
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
   ),
@@ -24,6 +35,10 @@ export const metadata: Metadata = {
     title: "Hablemos Manga",
     description: "Recomendaciones de manga potenciadas por IA",
     type: "website",
+    siteName: "Hablemos Manga",
+  },
+  other: {
+    "theme-color": "#020617",
   },
 };
 
