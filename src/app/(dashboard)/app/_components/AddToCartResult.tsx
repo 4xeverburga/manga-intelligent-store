@@ -3,7 +3,7 @@
 import { CheckCircle, XCircle } from "lucide-react";
 import { useCartStore } from "@/stores/cart";
 import { useEffect } from "react";
-import type { CartResult } from "./ChatMessage";
+import type { CartResult } from "@/app/(dashboard)/app/_components/ChatMessage";
 
 export function AddToCartResult({ result }: { result: CartResult }) {
   const addItem = useCartStore((s) => s.addItem);

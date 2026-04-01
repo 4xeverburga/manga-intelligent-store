@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { CatalogueClient } from "./_components/CatalogueClient";
+import { CatalogueClient } from "@/app/catalogue/_components/CatalogueClient";
 
 export const metadata = {
   title: "Catálogo | Hablemos Manga",

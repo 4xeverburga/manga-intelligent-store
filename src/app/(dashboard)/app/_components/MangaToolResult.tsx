@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ShoppingCart } from "lucide-react";
 import { useCartStore } from "@/stores/cart";
-import type { MangaResult } from "./ChatMessage";
+import type { MangaResult } from "@/app/(dashboard)/app/_components/ChatMessage";
 
 export function MangaToolResult({ results }: { results: MangaResult[] }) {
   const addItem = useCartStore((s) => s.addItem);

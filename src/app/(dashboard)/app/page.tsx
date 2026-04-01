@@ -1,9 +1,9 @@
 "use client";
 
-import { Chat } from "./_components/Chat";
-import { CartSidebar } from "./_components/CartSidebar";
-import { InsightsSidebar } from "./_components/InsightsSidebar";
-import { DashboardHeader } from "./_components/DashboardHeader";
+import { Chat } from "@/app/(dashboard)/app/_components/Chat";
+import { CartSidebar } from "@/app/(dashboard)/app/_components/CartSidebar";
+import { InsightsSidebar } from "@/app/(dashboard)/app/_components/InsightsSidebar";
+import { DashboardHeader } from "@/app/(dashboard)/app/_components/DashboardHeader";
 
 export default function AppPage() {
   return (

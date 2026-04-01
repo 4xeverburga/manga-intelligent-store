@@ -5,8 +5,8 @@ import { useState } from "react";
 import { ShoppingCart, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { InsightsSidebar } from "./InsightsSidebar";
-import { CartSidebar } from "./CartSidebar";
+import { InsightsSidebar } from "@/app/(dashboard)/app/_components/InsightsSidebar";
+import { CartSidebar } from "@/app/(dashboard)/app/_components/CartSidebar";
 import { useCartStore, selectTotalItems } from "@/stores/cart";
 
 export function DashboardHeader() {

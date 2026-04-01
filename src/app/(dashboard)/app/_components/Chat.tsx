@@ -5,7 +5,7 @@ import { useChat, type UIMessage } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { Button } from "@/components/ui/button";
 import { SendHorizontal, Square } from "lucide-react";
-import { ChatMessage } from "./ChatMessage";
+import { ChatMessage } from "@/app/(dashboard)/app/_components/ChatMessage";
 import { ONBOARDING_MESSAGE } from "@/infrastructure/ai/prompts";
 import { useProfileStore } from "@/stores/profile";
 

@@ -4,10 +4,10 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { staggerContainer } from "@/components/motion";
-import { MangaCard } from "./MangaCard";
-import { GenreFilter } from "./GenreFilter";
-import { SearchBar } from "./SearchBar";
-import { SimilarModal } from "./SimilarModal";
+import { MangaCard } from "@/app/catalogue/_components/MangaCard";
+import { GenreFilter } from "@/app/catalogue/_components/GenreFilter";
+import { SearchBar } from "@/app/catalogue/_components/SearchBar";
+import { SimilarModal } from "@/app/catalogue/_components/SimilarModal";
 import { MangaCardSkeleton } from "@/app/catalogue/_components/MangaCardSkeleton"
 
 interface MangaItem {
