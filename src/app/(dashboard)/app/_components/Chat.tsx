@@ -3,7 +3,6 @@
 import { useRef, useEffect, useState, useMemo } from "react";
 import { useChat, type UIMessage } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { SendHorizontal, Square } from "lucide-react";
 import { ChatMessage } from "./ChatMessage";
@@ -73,7 +72,7 @@ export function Chat() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Messages */}
-      <ScrollArea className="flex-1" ref={scrollRef}>
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto max-w-2xl space-y-4 px-4 py-6">
           {messages.map((msg) => (
             <ChatMessage key={msg.id} message={msg} />
@@ -85,7 +84,7 @@ export function Chat() {
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Input */}
       <div className="border-t border-border/40 bg-surface p-4">

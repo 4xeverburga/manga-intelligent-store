@@ -2,7 +2,7 @@
 
 import type { UIMessage } from "@ai-sdk/react";
 import { cn } from "@/lib/utils";
-import { MangaToolResult } from "./MangaToolResult";
+import { MangaToolResult } from "@/app/(dashboard)/app/_components/MangaToolResult"
 import { AddToCartResult } from "./AddToCartResult";
 
 export function ChatMessage({ message }: { message: UIMessage }) {
