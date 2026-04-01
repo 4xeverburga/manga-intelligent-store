@@ -18,7 +18,10 @@ export function GenreFilter({ activeGenres, onToggle, onClear }: GenreFilterProp
 
   useEffect(() => {
     fetch("/api/mangas/genres")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("Failed");
+        return r.json();
+      })
       .then(setGenres)
       .catch(() => {});
   }, []);

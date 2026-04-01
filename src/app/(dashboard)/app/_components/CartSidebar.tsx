@@ -10,9 +10,8 @@ import {
   useCartStore,
   selectTotalItems,
   selectTotalPrice,
-  selectManualItems,
-  selectAIItems,
 } from "@/stores/cart";
+import { useShallow } from "zustand/react/shallow";
 import type { CartItem } from "@/core/domain/entities";
 
 function CartItemRow({
@@ -93,8 +92,12 @@ function CartItemRow({
 export function CartSidebar() {
   const totalItems = useCartStore(selectTotalItems);
   const totalPrice = useCartStore(selectTotalPrice);
-  const manualItems = useCartStore(selectManualItems);
-  const aiItems = useCartStore(selectAIItems);
+  const manualItems = useCartStore(
+    useShallow((s) => s.items.filter((i) => i.source === "manual"))
+  );
+  const aiItems = useCartStore(
+    useShallow((s) => s.items.filter((i) => i.source === "ai-suggested"))
+  );
   const clearAISuggestions = useCartStore((s) => s.clearAISuggestions);
   const isEmpty = totalItems === 0;
 

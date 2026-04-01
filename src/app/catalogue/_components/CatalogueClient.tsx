@@ -67,6 +67,7 @@ export function CatalogueClient() {
         if (searchQuery) params.set("search", searchQuery);
 
         const res = await fetch(`/api/mangas?${params.toString()}`);
+        if (!res.ok) return;
         const json = await res.json();
 
         if (append) {
