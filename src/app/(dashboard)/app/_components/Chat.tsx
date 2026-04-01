@@ -1,0 +1,108 @@
+"use client";
+
+import { useRef, useEffect, useState } from "react";
+import { useChat, type UIMessage } from "@ai-sdk/react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { SendHorizontal, Square } from "lucide-react";
+import { ChatMessage } from "./ChatMessage";
+import { ONBOARDING_MESSAGE } from "@/infrastructure/ai/prompts";
+
+const initialMessages: UIMessage[] = [
+  {
+    id: "onboarding",
+    role: "assistant",
+    parts: [{ type: "text", text: ONBOARDING_MESSAGE }],
+  },
+];
+
+export function Chat() {
+  const { messages, sendMessage, status, stop } = useChat({
+    messages: initialMessages,
+  });
+  const [input, setInput] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const isStreaming = status === "streaming" || status === "submitted";
+
+  // Auto-scroll
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages]);
+
+  const handleSend = () => {
+    const text = input.trim();
+    if (!text || isStreaming) return;
+    sendMessage({ text });
+    setInput("");
+    inputRef.current?.focus();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      {/* Messages */}
+      <ScrollArea className="flex-1" ref={scrollRef}>
+        <div className="mx-auto max-w-2xl space-y-4 px-4 py-6">
+          {messages.map((msg) => (
+            <ChatMessage key={msg.id} message={msg} />
+          ))}
+          {isStreaming && messages[messages.length - 1]?.role === "user" && (
+            <div className="flex gap-2 text-muted-foreground">
+              <div className="h-6 w-6 animate-pulse rounded-full bg-primary/30" />
+              <span className="text-sm italic">Pensando...</span>
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+
+      {/* Input */}
+      <div className="border-t border-border/40 bg-surface p-4">
+        <div className="mx-auto flex max-w-2xl items-end gap-2">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Describe qué manga buscas..."
+            rows={1}
+            className="flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+            style={{ maxHeight: "120px" }}
+            onInput={(e) => {
+              const target = e.target as HTMLTextAreaElement;
+              target.style.height = "auto";
+              target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
+            }}
+          />
+          {isStreaming ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={stop}
+              className="shrink-0"
+            >
+              <Square className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              size="icon"
+              onClick={handleSend}
+              disabled={!input.trim()}
+              className="shrink-0 bg-primary"
+            >
+              <SendHorizontal className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
