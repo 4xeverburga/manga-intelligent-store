@@ -22,7 +22,7 @@ Usa esta información para personalizar tus recomendaciones. Puedes referirte a 
   }
 
   const result = streamText({
-    model: google("gemini-2.0-flash"),
+    model: google(process.env.GEMINI_MODEL || "gemini-2.0-flash"),
     system,
     messages,
     tools: {
