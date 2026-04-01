@@ -1,4 +1,4 @@
-import { streamText, tool, stepCountIs } from "ai";
+import { streamText, tool, stepCountIs, convertToModelMessages } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import { supabase } from "@/infrastructure/db/client";
@@ -8,7 +8,8 @@ import { SYSTEM_PROMPT } from "@/infrastructure/ai/prompts";
 const ai = new GeminiAdapter();
 
 export async function POST(req: Request) {
-  const { messages, profileContext } = await req.json();
+  const { messages: uiMessages, profileContext } = await req.json();
+  const messages = await convertToModelMessages(uiMessages);
 
   let system = SYSTEM_PROMPT;
   if (profileContext) {
