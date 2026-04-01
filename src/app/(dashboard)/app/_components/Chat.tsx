@@ -1,12 +1,14 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useMemo } from "react";
 import { useChat, type UIMessage } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { SendHorizontal, Square } from "lucide-react";
 import { ChatMessage } from "./ChatMessage";
 import { ONBOARDING_MESSAGE } from "@/infrastructure/ai/prompts";
+import { useProfileStore } from "@/stores/profile";
 
 const initialMessages: UIMessage[] = [
   {
@@ -17,7 +19,28 @@ const initialMessages: UIMessage[] = [
 ];
 
 export function Chat() {
+  const profile = useProfileStore((s) => s.profile);
+
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/chat",
+        body: () => ({
+          profileContext: profile
+            ? {
+                username: profile.username,
+                platform: profile.platform,
+                interestTags: profile.interestTags,
+                favoriteGenres: profile.favoriteGenres,
+              }
+            : null,
+        }),
+      }),
+    [profile]
+  );
+
   const { messages, sendMessage, status, stop } = useChat({
+    transport,
     messages: initialMessages,
   });
   const [input, setInput] = useState("");

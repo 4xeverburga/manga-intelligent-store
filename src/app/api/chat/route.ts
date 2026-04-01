@@ -10,11 +10,21 @@ import { SYSTEM_PROMPT } from "@/infrastructure/ai/prompts";
 const ai = new GeminiAdapter();
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const { messages, profileContext } = await req.json();
+
+  let system = SYSTEM_PROMPT;
+  if (profileContext) {
+    system += `\n\n## Perfil del usuario
+- Username: ${profileContext.username} (${profileContext.platform === "mal" ? "MyAnimeList" : "Reddit"})
+- Intereses: ${(profileContext.interestTags ?? []).join(", ") || "No disponible"}
+- Géneros favoritos: ${(profileContext.favoriteGenres ?? []).join(", ") || "No disponible"}
+
+Usa esta información para personalizar tus recomendaciones. Puedes referirte a sus gustos de forma natural.`;
+  }
 
   const result = streamText({
     model: google("gemini-2.0-flash"),
-    system: SYSTEM_PROMPT,
+    system,
     messages,
     tools: {
       search_manga: tool({
