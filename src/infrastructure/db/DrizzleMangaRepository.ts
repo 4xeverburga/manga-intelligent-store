@@ -1,93 +1,131 @@
-import { eq, ilike, or, sql } from "drizzle-orm";
 import type { Manga } from "@/core/domain/entities/Manga";
 import type { IMangaRepository } from "@/core/domain/ports/IMangaRepository";
-import { db } from "./client";
-import { mangas } from "./schema";
+import { supabase } from "./client";
 
-export class DrizzleMangaRepository implements IMangaRepository {
+interface MangaRow {
+  id: string;
+  jikan_id: number;
+  title: string;
+  synopsis: string;
+  genres: string[];
+  image_url: string;
+  score: number | null;
+  popularity: number | null;
+  embedding: number[] | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export class SupabaseMangaRepository implements IMangaRepository {
   async findById(id: string): Promise<Manga | null> {
-    const result = await db
-      .select()
-      .from(mangas)
-      .where(eq(mangas.id, id))
-      .limit(1);
-    return result[0] ? this.toDomain(result[0]) : null;
+    const { data } = await supabase
+      .from("mangas")
+      .select("*")
+      .eq("id", id)
+      .limit(1)
+      .single();
+    return data ? this.toDomain(data as MangaRow) : null;
   }
 
   async findByJikanId(jikanId: number): Promise<Manga | null> {
-    const result = await db
-      .select()
-      .from(mangas)
-      .where(eq(mangas.jikanId, jikanId))
-      .limit(1);
-    return result[0] ? this.toDomain(result[0]) : null;
+    const { data } = await supabase
+      .from("mangas")
+      .select("*")
+      .eq("jikan_id", jikanId)
+      .limit(1)
+      .single();
+    return data ? this.toDomain(data as MangaRow) : null;
   }
 
   async findAll(
     options: { limit?: number; offset?: number } = {}
   ): Promise<Manga[]> {
     const { limit = 24, offset = 0 } = options;
-    const result = await db
-      .select()
-      .from(mangas)
-      .limit(limit)
-      .offset(offset)
-      .orderBy(mangas.popularity);
-    return result.map(this.toDomain);
+    const { data } = await supabase
+      .from("mangas")
+      .select("*")
+      .order("popularity", { ascending: true })
+      .range(offset, offset + limit - 1);
+    return (data ?? []).map((r) => this.toDomain(r as MangaRow));
   }
 
   async findByGenres(genres: string[]): Promise<Manga[]> {
-    const result = await db
-      .select()
-      .from(mangas)
-      .where(sql`${mangas.genres} && ${genres}`);
-    return result.map(this.toDomain);
+    const { data } = await supabase
+      .from("mangas")
+      .select("*")
+      .overlaps("genres", genres);
+    return (data ?? []).map((r) => this.toDomain(r as MangaRow));
   }
 
   async searchByText(query: string): Promise<Manga[]> {
-    const pattern = `%${query}%`;
-    const result = await db
-      .select()
-      .from(mangas)
-      .where(
-        or(
-          ilike(mangas.title, pattern),
-          ilike(mangas.synopsis, pattern)
-        )
-      )
+    const { data } = await supabase
+      .from("mangas")
+      .select("*")
+      .ilike("title", `%${query}%`)
       .limit(20);
-    return result.map(this.toDomain);
+    return (data ?? []).map((r) => this.toDomain(r as MangaRow));
   }
 
   async findSimilar(
     embedding: number[],
     limit: number = 10
   ): Promise<Manga[]> {
-    const vectorStr = `[${embedding.join(",")}]`;
-    const result = await db.execute<{
-      id: string;
-      jikan_id: number;
-      title: string;
-      synopsis: string;
-      genres: string[];
-      image_url: string;
-      score: number;
-      popularity: number;
-      similarity: number;
-    }>(
-      sql`SELECT * FROM match_mangas(${vectorStr}::vector(3072), 0.3, ${limit})`
+    const { data } = await supabase.rpc("match_mangas", {
+      query_embedding: JSON.stringify(embedding),
+      match_threshold: 0.3,
+      match_count: limit,
+    });
+    return ((data ?? []) as Array<MangaRow & { similarity: number }>).map(
+      (row) => ({
+        id: row.id,
+        jikanId: row.jikan_id,
+        title: row.title,
+        synopsis: row.synopsis,
+        genres: row.genres,
+        imageUrl: row.image_url,
+        score: row.score ?? 0,
+        popularity: row.popularity ?? 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
     );
-    return (result as unknown as Array<{
-      id: string;
-      jikan_id: number;
-      title: string;
-      synopsis: string;
-      genres: string[];
-      image_url: string;
-      score: number;
-      popularity: number;
-      similarity: number;
-    }>).map((row) => ({
+  }
+
+  async upsertFromSeed(
+    manga: Omit<Manga, "id" | "createdAt" | "updatedAt">
+  ): Promise<Manga> {
+    const { data, error } = await supabase
+      .from("mangas")
+      .upsert(
+        {
+          jikan_id: manga.jikanId,
+          title: manga.title,
+          synopsis: manga.synopsis,
+          genres: manga.genres,
+          image_url: manga.imageUrl,
+          score: manga.score,
+          popularity: manga.popularity,
+          embedding: JSON.stringify(manga.embedding),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "jikan_id" }
+      )
+      .select()
+      .single();
+
+    if (error) throw error;
+    return this.toDomain(data as MangaRow);
+  }
+
+  async count(): Promise<number> {
+    const { count } = await supabase
+      .from("mangas")
+      .select("*", { count: "exact", head: true });
+    return count ?? 0;
+  }
+
+  private toDomain(row: MangaRow): Manga {
+    return {
       id: row.id,
       jikanId: row.jikan_id,
       title: row.title,
@@ -96,64 +134,9 @@ export class DrizzleMangaRepository implements IMangaRepository {
       imageUrl: row.image_url,
       score: row.score ?? 0,
       popularity: row.popularity ?? 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }));
-  }
-
-  async upsertFromSeed(
-    manga: Omit<Manga, "id" | "createdAt" | "updatedAt">
-  ): Promise<Manga> {
-    const result = await db
-      .insert(mangas)
-      .values({
-        jikanId: manga.jikanId,
-        title: manga.title,
-        synopsis: manga.synopsis,
-        genres: manga.genres,
-        imageUrl: manga.imageUrl,
-        score: manga.score,
-        popularity: manga.popularity,
-        embedding: manga.embedding,
-      })
-      .onConflictDoUpdate({
-        target: mangas.jikanId,
-        set: {
-          title: manga.title,
-          synopsis: manga.synopsis,
-          genres: manga.genres,
-          imageUrl: manga.imageUrl,
-          score: manga.score,
-          popularity: manga.popularity,
-          embedding: manga.embedding,
-          updatedAt: new Date(),
-        },
-      })
-      .returning();
-
-    return this.toDomain(result[0]);
-  }
-
-  async count(): Promise<number> {
-    const result = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(mangas);
-    return Number(result[0].count);
-  }
-
-  private toDomain(row: typeof mangas.$inferSelect): Manga {
-    return {
-      id: row.id,
-      jikanId: row.jikanId,
-      title: row.title,
-      synopsis: row.synopsis,
-      genres: row.genres,
-      imageUrl: row.imageUrl,
-      score: row.score ?? 0,
-      popularity: row.popularity ?? 0,
       embedding: row.embedding ?? undefined,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
+      createdAt: new Date(row.created_at),
+      updatedAt: new Date(row.updated_at),
     };
   }
 }

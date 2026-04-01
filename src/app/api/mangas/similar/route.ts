@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/infrastructure/db/client";
-import { mangas } from "@/infrastructure/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { supabase } from "@/infrastructure/db/client";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -15,14 +13,12 @@ export async function POST(req: NextRequest) {
   }
 
   // Get the manga's embedding
-  const [manga] = await db
-    .select({
-      id: mangas.id,
-      embedding: mangas.embedding,
-    })
-    .from(mangas)
-    .where(eq(mangas.id, mangaId))
-    .limit(1);
+  const { data: manga } = await supabase
+    .from("mangas")
+    .select("id, embedding")
+    .eq("id", mangaId)
+    .limit(1)
+    .single();
 
   if (!manga) {
     return NextResponse.json({ error: "Manga not found" }, { status: 404 });
@@ -35,13 +31,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const vecStr = `[${manga.embedding.join(",")}]`;
-  const results = await db.execute(
-    sql`SELECT * FROM match_mangas(${vecStr}::vector(3072), 0.3, 7)`
-  );
+  const { data: results } = await supabase.rpc("match_mangas", {
+    query_embedding: JSON.stringify(manga.embedding),
+    match_threshold: 0.3,
+    match_count: 7,
+  });
 
   // Filter out the source manga itself
-  const similar = (results as unknown as Array<Record<string, unknown>>)
+  const similar = ((results ?? []) as Array<Record<string, unknown>>)
     .filter((r) => r.id !== mangaId)
     .slice(0, 6)
     .map((r) => ({

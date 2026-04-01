@@ -1,9 +1,7 @@
 import { streamText, tool, stepCountIs } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
-import { db } from "@/infrastructure/db/client";
-import { mangas } from "@/infrastructure/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { supabase } from "@/infrastructure/db/client";
 import { GeminiAdapter } from "@/infrastructure/ai/GeminiAdapter";
 import { SYSTEM_PROMPT } from "@/infrastructure/ai/prompts";
 
@@ -39,11 +37,12 @@ Usa esta información para personalizar tus recomendaciones. Puedes referirte a 
         }),
         execute: async ({ query }) => {
           const { embedding } = await ai.generateEmbedding(query);
-          const vecStr = "[" + embedding.join(",") + "]";
-          const results = await db.execute(
-            sql`SELECT * FROM match_mangas(${vecStr}::vector(3072), 0.35, 8)`
-          );
-          return (results as unknown as Array<Record<string, unknown>>).map(
+          const { data: results } = await supabase.rpc("match_mangas", {
+            query_embedding: JSON.stringify(embedding),
+            match_threshold: 0.35,
+            match_count: 8,
+          });
+          return ((results ?? []) as Array<Record<string, unknown>>).map(
             (r) => ({
               id: r.id,
               title: r.title,
@@ -73,11 +72,12 @@ Usa esta información para personalizar tus recomendaciones. Puedes referirte a 
         }),
         execute: async ({ mangaId, title, reason }) => {
           // Verify manga exists in DB
-          const [manga] = await db
-            .select({ id: mangas.id, title: mangas.title })
-            .from(mangas)
-            .where(eq(mangas.id, mangaId))
-            .limit(1);
+          const { data: manga } = await supabase
+            .from("mangas")
+            .select("id, title")
+            .eq("id", mangaId)
+            .limit(1)
+            .single();
 
           if (!manga) {
             return { success: false, error: "Manga not found in database" };
@@ -118,11 +118,12 @@ Usa esta información para personalizar tus recomendaciones. Puedes referirte a 
           const query = parts.join(". ") || "popular manga recommendations";
 
           const { embedding } = await ai.generateEmbedding(query);
-          const vecStr = "[" + embedding.join(",") + "]";
-          const results = await db.execute(
-            sql`SELECT * FROM match_mangas(${vecStr}::vector(3072), 0.3, 6)`
-          );
-          return (results as unknown as Array<Record<string, unknown>>).map(
+          const { data: results } = await supabase.rpc("match_mangas", {
+            query_embedding: JSON.stringify(embedding),
+            match_threshold: 0.3,
+            match_count: 6,
+          });
+          return ((results ?? []) as Array<Record<string, unknown>>).map(
             (r) => ({
               id: r.id,
               title: r.title,

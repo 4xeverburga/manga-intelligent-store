@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
-import { db } from "@/infrastructure/db/client";
-import { sql } from "drizzle-orm";
+import { supabase } from "@/infrastructure/db/client";
 
 export async function GET() {
-  const result = await db.execute<{ genre: string }>(
-    sql`SELECT DISTINCT unnest(genres) AS genre FROM mangas ORDER BY genre`
+  const { data: mangas } = await supabase
+    .from("mangas")
+    .select("genres");
+
+  const genreSet = new Set<string>();
+  (mangas ?? []).forEach((m) =>
+    (m.genres as string[]).forEach((g) => genreSet.add(g))
   );
 
-  const genres = (result as unknown as Array<{ genre: string }>).map(
-    (r) => r.genre
-  );
-
-  return NextResponse.json(genres);
+  return NextResponse.json([...genreSet].sort());
 }
