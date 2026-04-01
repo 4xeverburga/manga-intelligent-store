@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { Trash2, ShoppingCart, Plus, Minus, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -174,9 +175,11 @@ export function CartSidebar() {
             <span className="font-semibold">S/ {totalPrice.toFixed(2)}</span>
           </div>
           <Separator className="my-3" />
-          <Button className="w-full bg-cta text-cta-foreground hover:bg-cta/90">
-            Pagar con Niubiz
-          </Button>
+          <Link href="/checkout">
+            <Button className="w-full bg-cta text-cta-foreground hover:bg-cta/90">
+              Pagar con Niubiz
+            </Button>
+          </Link>
         </div>
       )}
     </div>

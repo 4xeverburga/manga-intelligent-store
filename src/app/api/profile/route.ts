@@ -14,7 +14,7 @@ const inputSchema = z.object({
 async function generateInterestTags(profile: UserInsight): Promise<string[]> {
   try {
     const { text } = await generateText({
-      model: google(process.env.GEMINI_MODEL || "gemini-2.0-flash"),
+      model: google(process.env.GEMINI_MODEL || ""),
       prompt: `Analiza este perfil de usuario de ${profile.platform === "mal" ? "MyAnimeList" : "Reddit"} y genera 5-8 tags de interés para recomendaciones de manga. Los tags deben ser en español, descriptivos y cortos (2-3 palabras cada uno).
 
 Datos del perfil:
