@@ -3,7 +3,7 @@
 import type { UIMessage } from "@ai-sdk/react";
 import { cn } from "@/lib/utils";
 import { MangaToolResult } from "@/app/(dashboard)/app/_components/MangaToolResult"
-import { AddToCartResult } from "./AddToCartResult";
+import { AddToCartResult } from "@/app/(dashboard)/app/_components/AddToCartResult"
 
 export function ChatMessage({ message }: { message: UIMessage }) {
   const isUser = message.role === "user";
