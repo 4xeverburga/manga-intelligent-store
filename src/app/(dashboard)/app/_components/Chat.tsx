@@ -28,27 +28,30 @@ export function Chat() {
     ];
   }, [profiles]);
 
-  const profileContext = useMemo(() => {
-    const all = Object.values(profiles);
-    if (all.length === 0) return null;
-    return {
-      platforms: all.map((p) => ({
-        username: p.username,
-        platform: p.platform,
-        rawData: p.rawData,
-      })),
-      interestTags: [...new Set(all.flatMap((p) => p.interestTags))],
-      favoriteGenres: [...new Set(all.flatMap((p) => p.favoriteGenres))],
-    };
-  }, [profiles]);
-
+  // Stable transport — reads fresh profile data from the store at request time
+  // to avoid stale closures from Zustand hydration timing
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
         api: "/api/chat",
-        body: () => ({ profileContext }),
+        body: () => {
+          const currentProfiles = useProfileStore.getState().profiles;
+          const all = Object.values(currentProfiles);
+          if (all.length === 0) return {};
+          return {
+            profileContext: {
+              platforms: all.map((p) => ({
+                username: p.username,
+                platform: p.platform,
+                rawData: p.rawData,
+              })),
+              interestTags: [...new Set(all.flatMap((p) => p.interestTags))],
+              favoriteGenres: [...new Set(all.flatMap((p) => p.favoriteGenres))],
+            },
+          };
+        },
       }),
-    [profileContext]
+    []
   );
 
   const { messages, sendMessage, status, stop } = useChat({
