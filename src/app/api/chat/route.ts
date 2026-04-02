@@ -41,7 +41,7 @@ export async function POST(req: Request) {
 - Intereses IA: ${(profileContext.interestTags ?? []).join(", ") || "No disponible"}
 - G\u00e9neros favoritos: ${(profileContext.favoriteGenres ?? []).join(", ") || "No disponible"}
 
-Usa TODA esta informaci\u00f3n para personalizar tus recomendaciones. Conoces sus gustos reales: los subreddits que visitan, los manga que leen, el anime que ven. Ref\u00e9rete a sus gustos de forma natural.`;
+IMPORTANTE: Ya tienes los datos del usuario. NO le preguntes qu\u00e9 g\u00e9neros le gustan ni cu\u00e1l es su manga favorito — ya lo sabes por sus perfiles. Usa esta informaci\u00f3n directamente para personalizar recomendaciones. Cuando el usuario pregunte qu\u00e9 sabes de su perfil, responde con datos CONCRETOS: t\u00edtulos espec\u00edficos, subreddits, animes, etc.`;
   }
 
   const result = streamText({

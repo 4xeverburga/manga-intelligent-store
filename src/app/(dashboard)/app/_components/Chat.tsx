@@ -6,19 +6,27 @@ import { DefaultChatTransport } from "ai";
 import { Button } from "@/components/ui/button";
 import { SendHorizontal, Square } from "lucide-react";
 import { ChatMessage } from "@/app/(dashboard)/app/_components/ChatMessage";
-import { ONBOARDING_MESSAGE } from "@/infrastructure/ai/prompts";
+import { ONBOARDING_MESSAGE, ONBOARDING_MESSAGE_WITH_PROFILE } from "@/infrastructure/ai/prompts";
 import { useProfileStore } from "@/stores/profile";
-
-const initialMessages: UIMessage[] = [
-  {
-    id: "onboarding",
-    role: "assistant",
-    parts: [{ type: "text", text: ONBOARDING_MESSAGE }],
-  },
-];
 
 export function Chat() {
   const profiles = useProfileStore((s) => s.profiles);
+
+  const initialMessages = useMemo<UIMessage[]>(() => {
+    const hasProfiles = Object.keys(profiles).length > 0;
+    return [
+      {
+        id: "onboarding",
+        role: "assistant" as const,
+        parts: [
+          {
+            type: "text" as const,
+            text: hasProfiles ? ONBOARDING_MESSAGE_WITH_PROFILE : ONBOARDING_MESSAGE,
+          },
+        ],
+      },
+    ];
+  }, [profiles]);
 
   const profileContext = useMemo(() => {
     const all = Object.values(profiles);
