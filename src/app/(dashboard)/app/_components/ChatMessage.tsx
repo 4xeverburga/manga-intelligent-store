@@ -35,10 +35,10 @@ export function ChatMessage({ message }: { message: UIMessage }) {
               <div
                 key={i}
                 className={cn(
-                  "rounded-lg px-3 py-2 text-sm leading-relaxed",
+                  "rounded-lg px-3 py-2 text-base leading-relaxed",
                   isUser
                     ? "inline-block bg-primary text-primary-foreground"
-                    : "bg-muted/50 prose prose-invert prose-sm max-w-none"
+                    : "bg-muted/50 prose prose-invert prose-base max-w-none"
                 )}
                 dangerouslySetInnerHTML={{
                   __html: formatMarkdown(part.text),

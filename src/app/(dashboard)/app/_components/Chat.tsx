@@ -123,7 +123,7 @@ function ChatInner() {
           {isStreaming && messages[messages.length - 1]?.role === "user" && (
             <div className="flex gap-2 text-muted-foreground">
               <div className="h-6 w-6 animate-pulse rounded-full bg-primary/30" />
-              <span className="text-sm italic">Pensando...</span>
+              <span className="text-base italic">Pensando...</span>
             </div>
           )}
         </div>
@@ -139,7 +139,7 @@ function ChatInner() {
             onKeyDown={handleKeyDown}
             placeholder="Describe qué manga buscas..."
             rows={1}
-            className="flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
             style={{ maxHeight: "120px" }}
             onInput={(e) => {
               const target = e.target as HTMLTextAreaElement;
