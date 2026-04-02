@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { SendHorizontal, Square } from "lucide-react";
 import { ChatMessage } from "@/app/(dashboard)/app/_components/ChatMessage";
 import { ONBOARDING_MESSAGE } from "@/infrastructure/ai/prompts";
-import { useProfileStore, selectMergedContext } from "@/stores/profile";
+import { useProfileStore } from "@/stores/profile";
 
 const initialMessages: UIMessage[] = [
   {
@@ -18,7 +18,21 @@ const initialMessages: UIMessage[] = [
 ];
 
 export function Chat() {
-  const profileContext = useProfileStore(selectMergedContext);
+  const profiles = useProfileStore((s) => s.profiles);
+
+  const profileContext = useMemo(() => {
+    const all = Object.values(profiles);
+    if (all.length === 0) return null;
+    return {
+      platforms: all.map((p) => ({
+        username: p.username,
+        platform: p.platform,
+        rawData: p.rawData,
+      })),
+      interestTags: [...new Set(all.flatMap((p) => p.interestTags))],
+      favoriteGenres: [...new Set(all.flatMap((p) => p.favoriteGenres))],
+    };
+  }, [profiles]);
 
   const transport = useMemo(
     () =>

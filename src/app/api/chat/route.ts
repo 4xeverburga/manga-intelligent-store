@@ -13,16 +13,35 @@ export async function POST(req: Request) {
 
   let system = SYSTEM_PROMPT;
   if (profileContext) {
-    const platformLines = (profileContext.platforms ?? []).map(
-      (p: { username: string; platform: string }) =>
-        `- ${p.username} (${p.platform === "mal" ? "MyAnimeList" : "Reddit"})`
+    const platformSections = (profileContext.platforms ?? []).map(
+      (p: { username: string; platform: string; rawData?: Record<string, unknown> }) => {
+        const label = p.platform === "mal" ? "MyAnimeList" : "Reddit";
+        let section = `### ${p.username} (${label})`;
+        if (p.rawData) {
+          const rd = p.rawData;
+          if (rd.favoriteManga && (rd.favoriteManga as string[]).length > 0)
+            section += `\n- Manga favoritos: ${(rd.favoriteManga as string[]).join(", ")}`;
+          if (rd.favoriteAnime && (rd.favoriteAnime as string[]).length > 0)
+            section += `\n- Anime favoritos: ${(rd.favoriteAnime as string[]).join(", ")}`;
+          if (rd.readingManga && (rd.readingManga as string[]).length > 0)
+            section += `\n- Leyendo ahora: ${(rd.readingManga as string[]).join(", ")}`;
+          if (rd.watchingAnime && (rd.watchingAnime as string[]).length > 0)
+            section += `\n- Viendo ahora: ${(rd.watchingAnime as string[]).join(", ")}`;
+          if (rd.subreddits && (rd.subreddits as string[]).length > 0)
+            section += `\n- Subreddits activos: ${(rd.subreddits as string[]).join(", ")}`;
+          if (rd.mangaSubreddits && (rd.mangaSubreddits as string[]).length > 0)
+            section += `\n- Subreddits manga/anime: ${(rd.mangaSubreddits as string[]).join(", ")}`;
+          if (rd.mangaPostTitles && (rd.mangaPostTitles as string[]).length > 0)
+            section += `\n- Posts recientes sobre manga: ${(rd.mangaPostTitles as string[]).join("; ")}`;
+        }
+        return section;
+      }
     );
-    system += `\n\n## Perfil del usuario
-Cuentas conectadas:\n${platformLines.join("\n")}
-- Intereses: ${(profileContext.interestTags ?? []).join(", ") || "No disponible"}
-- Géneros favoritos: ${(profileContext.favoriteGenres ?? []).join(", ") || "No disponible"}
+    system += `\n\n## Perfil del usuario\n${platformSections.join("\n\n")}
+- Intereses IA: ${(profileContext.interestTags ?? []).join(", ") || "No disponible"}
+- G\u00e9neros favoritos: ${(profileContext.favoriteGenres ?? []).join(", ") || "No disponible"}
 
-Usa esta información para personalizar tus recomendaciones. Puedes referirte a sus gustos de forma natural.`;
+Usa TODA esta informaci\u00f3n para personalizar tus recomendaciones. Conoces sus gustos reales: los subreddits que visitan, los manga que leen, el anime que ven. Ref\u00e9rete a sus gustos de forma natural.`;
   }
 
   const result = streamText({
