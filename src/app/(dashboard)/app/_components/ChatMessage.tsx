@@ -57,7 +57,7 @@ export function ChatMessage({ message }: { message: UIMessage }) {
               output?: unknown;
             };
 
-            if (toolPart.state === "result" || toolPart.state === "output") {
+            if (toolPart.state === "output-available") {
               if (
                 toolPart.type === "tool-search_manga" ||
                 toolPart.type === "tool-get_recommendations"
@@ -80,7 +80,7 @@ export function ChatMessage({ message }: { message: UIMessage }) {
             }
 
             if (
-              toolPart.state === "call" ||
+              toolPart.state === "input-streaming" ||
               toolPart.state === "input-available"
             ) {
               return (
