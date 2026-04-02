@@ -1,6 +1,8 @@
+export type PlatformType = "reddit" | "mal";
+
 export interface UserInsight {
   username: string;
-  platform: "reddit" | "mal";
+  platform: PlatformType;
   avatarUrl?: string;
   bio?: string;
   favoriteGenres: string[];

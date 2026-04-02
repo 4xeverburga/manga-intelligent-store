@@ -1,24 +1,40 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { UserInsight } from "@/core/domain/entities/UserInsight";
+import type { UserInsight, PlatformType } from "@/core/domain/entities/UserInsight";
 
 interface ProfileState {
-  profile: UserInsight | null;
-  loading: boolean;
+  profiles: Record<string, UserInsight>;
+  loadingPlatform: PlatformType | null;
   error: string | null;
-  fetchProfile: (username: string, platform: "reddit" | "mal") => Promise<void>;
-  clear: () => void;
+  connectProfile: (username: string, platform: PlatformType) => Promise<void>;
+  disconnectProfile: (platform: PlatformType) => void;
+  refreshProfile: (platform: PlatformType) => Promise<void>;
+  clearAll: () => void;
+}
+
+/** Merged view of all connected profiles for AI context */
+export function selectMergedContext(state: ProfileState) {
+  const all = Object.values(state.profiles);
+  if (all.length === 0) return null;
+  return {
+    platforms: all.map((p) => ({
+      username: p.username,
+      platform: p.platform,
+    })),
+    interestTags: [...new Set(all.flatMap((p) => p.interestTags))],
+    favoriteGenres: [...new Set(all.flatMap((p) => p.favoriteGenres))],
+  };
 }
 
 export const useProfileStore = create<ProfileState>()(
   persist(
-    (set) => ({
-      profile: null,
-      loading: false,
+    (set, get) => ({
+      profiles: {},
+      loadingPlatform: null,
       error: null,
 
-      fetchProfile: async (username, platform) => {
-        set({ loading: true, error: null });
+      connectProfile: async (username, platform) => {
+        set({ loadingPlatform: platform, error: null });
         try {
           const res = await fetch("/api/profile", {
             method: "POST",
@@ -27,20 +43,35 @@ export const useProfileStore = create<ProfileState>()(
           });
           const data = await res.json();
           if (!res.ok) {
-            set({ error: data.error || "Error al obtener perfil", loading: false });
+            set({ error: data.error || "Error al obtener perfil", loadingPlatform: null });
             return;
           }
-          set({ profile: data, loading: false });
+          set((s) => ({
+            profiles: { ...s.profiles, [platform]: data },
+            loadingPlatform: null,
+          }));
         } catch {
-          set({ error: "Error de conexión", loading: false });
+          set({ error: "Error de conexión", loadingPlatform: null });
         }
       },
 
-      clear: () => set({ profile: null, error: null }),
+      disconnectProfile: (platform) =>
+        set((s) => {
+          const { [platform]: _, ...rest } = s.profiles;
+          return { profiles: rest, error: null };
+        }),
+
+      refreshProfile: async (platform) => {
+        const existing = get().profiles[platform];
+        if (!existing) return;
+        await get().connectProfile(existing.username, platform);
+      },
+
+      clearAll: () => set({ profiles: {}, error: null }),
     }),
     {
       name: "hablemos-manga-profile",
-      partialize: (state) => ({ profile: state.profile }),
+      partialize: (state) => ({ profiles: state.profiles }),
     }
   )
 );

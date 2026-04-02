@@ -13,8 +13,12 @@ export async function POST(req: Request) {
 
   let system = SYSTEM_PROMPT;
   if (profileContext) {
+    const platformLines = (profileContext.platforms ?? []).map(
+      (p: { username: string; platform: string }) =>
+        `- ${p.username} (${p.platform === "mal" ? "MyAnimeList" : "Reddit"})`
+    );
     system += `\n\n## Perfil del usuario
-- Username: ${profileContext.username} (${profileContext.platform === "mal" ? "MyAnimeList" : "Reddit"})
+Cuentas conectadas:\n${platformLines.join("\n")}
 - Intereses: ${(profileContext.interestTags ?? []).join(", ") || "No disponible"}
 - Géneros favoritos: ${(profileContext.favoriteGenres ?? []).join(", ") || "No disponible"}
 

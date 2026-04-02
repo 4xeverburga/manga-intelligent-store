@@ -17,6 +17,10 @@ const nextConfig: NextConfig = {
         hostname: "myanimelist.net",
         pathname: "/images/**",
       },
+      {
+        protocol: "https",
+        hostname: "www.redditstatic.com",
+      },
     ],
   },
 };

@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(profile);
   } catch (error) {
+    console.error("[POST /api/profile] Error:", error);
     const message =
       error instanceof Error ? error.message : "Error al obtener perfil";
     return NextResponse.json({ error: message }, { status: 422 });
