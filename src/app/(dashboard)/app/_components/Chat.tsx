@@ -9,7 +9,33 @@ import { ChatMessage } from "@/app/(dashboard)/app/_components/ChatMessage";
 import { ONBOARDING_MESSAGE, ONBOARDING_MESSAGE_WITH_PROFILE } from "@/infrastructure/ai/prompts";
 import { useProfileStore } from "@/stores/profile";
 
+/** Wrapper that waits for Zustand hydration before mounting the chat */
 export function Chat() {
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    if (useProfileStore.persist.hasHydrated()) {
+      setHydrated(true);
+    } else {
+      const unsub = useProfileStore.persist.onFinishHydration(() =>
+        setHydrated(true)
+      );
+      return unsub;
+    }
+  }, []);
+
+  if (!hydrated) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <span className="text-sm text-muted-foreground italic">Cargando chat...</span>
+      </div>
+    );
+  }
+
+  return <ChatInner />;
+}
+
+function ChatInner() {
   const profiles = useProfileStore((s) => s.profiles);
 
   const initialMessages = useMemo<UIMessage[]>(() => {
@@ -26,7 +52,8 @@ export function Chat() {
         ],
       },
     ];
-  }, [profiles]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only compute once on mount — profiles are already hydrated
 
   // Stable transport — reads fresh profile data from the store at request time
   // to avoid stale closures from Zustand hydration timing
