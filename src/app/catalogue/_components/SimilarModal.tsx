@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Loader2, ShoppingCart } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useCartStore } from "@/stores/cart";
 
 interface SimilarManga {
   id: string;
@@ -32,8 +31,6 @@ interface SimilarModalProps {
 export function SimilarModal({ mangaId, onClose }: SimilarModalProps) {
   const [results, setResults] = useState<SimilarManga[]>([]);
   const [loading, setLoading] = useState(false);
-  const addItem = useCartStore((s) => s.addItem);
-  const items = useCartStore((s) => s.items);
 
   useEffect(() => {
     if (!mangaId) {
@@ -74,7 +71,6 @@ export function SimilarModal({ mangaId, onClose }: SimilarModalProps) {
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {results.map((manga) => {
-              const inCart = items.some((i) => i.mangaId === manga.id);
               const similarityPct = Math.round((manga.similarity ?? 0) * 100);
               return (
                 <div
@@ -116,24 +112,11 @@ export function SimilarModal({ mangaId, onClose }: SimilarModalProps) {
                     <div className="mt-auto">
                       <Button
                         size="xs"
-                        variant={inCart ? "secondary" : "default"}
-                        disabled={inCart}
                         onClick={() => {
-                          if (!inCart) {
-                            addItem({
-                              mangaId: manga.id,
-                              title: manga.title,
-                              imageUrl: manga.imageUrl,
-                              price: 1.0,
-                              quantity: 1,
-                              source: "manual",
-                              addedAt: new Date(),
-                            });
-                          }
+                          window.location.href = `/catalogue/${manga.id}`;
                         }}
                       >
-                        <ShoppingCart data-icon="inline-start" className="size-3" />
-                        {inCart ? "En carrito" : "Agregar"}
+                        Ver volúmenes
                       </Button>
                     </div>
                   </div>

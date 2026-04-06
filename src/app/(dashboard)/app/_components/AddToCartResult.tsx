@@ -1,26 +1,10 @@
 "use client";
 
 import { CheckCircle, XCircle } from "lucide-react";
-import { useCartStore } from "@/stores/cart";
-import { useEffect } from "react";
+import Link from "next/link";
 import type { CartResult } from "@/app/(dashboard)/app/_components/ChatMessage";
 
 export function AddToCartResult({ result }: { result: CartResult }) {
-  const addItem = useCartStore((s) => s.addItem);
-
-  useEffect(() => {
-    if (result.success && result.mangaId && result.title) {
-      addItem({
-        mangaId: result.mangaId,
-        title: result.title,
-        price: 1.0,
-        quantity: 1,
-        source: "ai-suggested",
-        addedAt: new Date(),
-      });
-    }
-  }, [result, addItem]);
-
   if (!result.success) {
     return (
       <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -33,7 +17,13 @@ export function AddToCartResult({ result }: { result: CartResult }) {
   return (
     <div className="flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary">
       <CheckCircle className="h-4 w-4" />
-      <strong>{result.title}</strong> agregado al carrito
+      <span>
+        Visita{" "}
+        <Link href={`/catalogue/${result.mangaId}`} className="underline font-medium">
+          {result.title}
+        </Link>{" "}
+        para elegir un volumen y agregarlo al carrito.
+      </span>
     </div>
   );
 }

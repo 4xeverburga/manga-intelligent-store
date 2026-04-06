@@ -225,7 +225,7 @@ export default function CheckoutPage() {
           <h2 className="mb-4 text-lg font-semibold">Resumen del pedido</h2>
           <div className="space-y-3">
             {items.map((item) => (
-              <div key={item.mangaId} className="flex items-center gap-3">
+              <div key={item.volumeId} className="flex items-center gap-3">
                 {item.imageUrl && (
                   <Image
                     src={item.imageUrl}

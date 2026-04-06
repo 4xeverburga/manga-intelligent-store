@@ -58,11 +58,40 @@ export const mangas = pgTable(
 export type SelectManga = typeof mangas.$inferSelect;
 export type InsertManga = typeof mangas.$inferInsert;
 
+// ── Manga Volumes ────────────────────────────────────
+export const mangaVolumes = pgTable(
+  "manga_volumes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    mangaId: uuid("manga_id").references(() => mangas.id, {
+      onDelete: "cascade",
+    }),
+    volumeNumber: integer("volume_number"),
+    title: text("title").notNull(),
+    isbn: text("isbn"),
+    coverUrl: text("cover_url"),
+    editor: text("editor"),
+    editionYear: integer("edition_year"),
+    isCrossover: boolean("is_crossover").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("manga_volumes_manga_id_idx").on(table.mangaId),
+    index("manga_volumes_isbn_idx").on(table.isbn),
+  ]
+);
+
+export type SelectMangaVolume = typeof mangaVolumes.$inferSelect;
+export type InsertMangaVolume = typeof mangaVolumes.$inferInsert;
+
+// ── Inventory (per volume) ───────────────────────────
 export const inventory = pgTable("inventory", {
   id: uuid("id").primaryKey().defaultRandom(),
-  mangaId: uuid("manga_id")
+  volumeId: uuid("volume_id")
     .notNull()
-    .references(() => mangas.id, { onDelete: "cascade" })
+    .references(() => mangaVolumes.id, { onDelete: "cascade" })
     .unique(),
   stock: integer("stock").notNull().default(0),
   canBeDropshipped: boolean("can_be_dropshipped").notNull().default(false),

@@ -5,9 +5,9 @@ import type { CartItem } from "@/core/domain/entities";
 interface CartState {
   items: CartItem[];
   addItem: (item: CartItem) => void;
-  removeItem: (mangaId: string, requestedBy?: "user" | "ai") => void;
-  updateQuantity: (mangaId: string, quantity: number, requestedBy?: "user" | "ai") => void;
-  approveItem: (mangaId: string) => void;
+  removeItem: (volumeId: string, requestedBy?: "user" | "ai") => void;
+  updateQuantity: (volumeId: string, quantity: number, requestedBy?: "user" | "ai") => void;
+  approveItem: (volumeId: string) => void;
   clearAISuggestions: () => void;
   clear: () => void;
 }
@@ -19,38 +19,35 @@ export const useCartStore = create<CartState>()(
 
       addItem: (item) =>
         set((state) => {
-          if (state.items.some((i) => i.mangaId === item.mangaId)) return state;
+          if (state.items.some((i) => i.volumeId === item.volumeId)) return state;
           return { items: [...state.items, item] };
         }),
 
-      removeItem: (mangaId, requestedBy = "user") =>
+      removeItem: (volumeId, requestedBy = "user") =>
         set((state) => {
           if (requestedBy === "ai") {
-            // AI can only remove items it suggested
             return {
               items: state.items.filter(
-                (i) => !(i.mangaId === mangaId && i.source === "ai-suggested")
+                (i) => !(i.volumeId === volumeId && i.source === "ai-suggested")
               ),
             };
           }
-          // User can remove anything
-          return { items: state.items.filter((i) => i.mangaId !== mangaId) };
+          return { items: state.items.filter((i) => i.volumeId !== volumeId) };
         }),
 
-      updateQuantity: (mangaId, quantity, requestedBy = "user") =>
+      updateQuantity: (volumeId, quantity, requestedBy = "user") =>
         set((state) => ({
           items: state.items.map((i) => {
-            if (i.mangaId !== mangaId) return i;
-            // AI cannot modify manual items
+            if (i.volumeId !== volumeId) return i;
             if (requestedBy === "ai" && i.source === "manual") return i;
             return { ...i, quantity: Math.max(1, quantity) };
           }),
         })),
 
-      approveItem: (mangaId) =>
+      approveItem: (volumeId) =>
         set((state) => ({
           items: state.items.map((i) =>
-            i.mangaId === mangaId ? { ...i, source: "manual" as const } : i
+            i.volumeId === volumeId ? { ...i, source: "manual" as const } : i
           ),
         })),
 

@@ -49,7 +49,7 @@ function CartItemRow({
           <Button
             variant="ghost"
             size="icon-xs"
-            onClick={() => updateQuantity(item.mangaId, item.quantity - 1)}
+            onClick={() => updateQuantity(item.volumeId, item.quantity - 1)}
             disabled={item.quantity <= 1}
           >
             <Minus className="size-3" />
@@ -58,7 +58,7 @@ function CartItemRow({
           <Button
             variant="ghost"
             size="icon-xs"
-            onClick={() => updateQuantity(item.mangaId, item.quantity + 1)}
+            onClick={() => updateQuantity(item.volumeId, item.quantity + 1)}
           >
             <Plus className="size-3" />
           </Button>
@@ -69,7 +69,7 @@ function CartItemRow({
           <Button
             variant="ghost"
             size="icon-xs"
-            onClick={() => approveItem(item.mangaId)}
+            onClick={() => approveItem(item.volumeId)}
             className="text-emerald-400 hover:text-emerald-300"
             title="Aprobar"
           >
@@ -79,7 +79,7 @@ function CartItemRow({
         <Button
           variant="ghost"
           size="icon-xs"
-          onClick={() => removeItem(item.mangaId)}
+          onClick={() => removeItem(item.volumeId)}
           className="text-muted-foreground hover:text-destructive"
           title="Eliminar"
         >
@@ -135,7 +135,7 @@ export function CartSidebar() {
                   </span>
                 </div>
                 {manualItems.map((item) => (
-                  <CartItemRow key={item.mangaId} item={item} />
+                  <CartItemRow key={item.volumeId} item={item} />
                 ))}
               </div>
             )}
@@ -158,7 +158,7 @@ export function CartSidebar() {
                   </button>
                 </div>
                 {aiItems.map((item) => (
-                  <CartItemRow key={item.mangaId} item={item} showApprove />
+                  <CartItemRow key={item.volumeId} item={item} showApprove />
                 ))}
               </div>
             )}

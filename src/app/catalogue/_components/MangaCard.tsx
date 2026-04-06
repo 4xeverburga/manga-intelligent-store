@@ -3,11 +3,10 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ShoppingCart, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { fadeIn } from "@/components/motion";
-import { useCartStore } from "@/stores/cart";
 
 interface MangaCardProps {
   manga: {
@@ -30,9 +29,6 @@ function getScoreColor(score: number) {
 
 export function MangaCard({ manga, onFindSimilar }: MangaCardProps) {
   const router = useRouter();
-  const addItem = useCartStore((s) => s.addItem);
-  const items = useCartStore((s) => s.items);
-  const inCart = items.some((i) => i.mangaId === manga.id);
   const score = manga.score ?? 0;
 
   return (
@@ -61,31 +57,18 @@ export function MangaCard({ manga, onFindSimilar }: MangaCardProps) {
           </span>
         )}
 
-        {/* Hover overlay with actions */}
+        {/* Hover overlay */}
         <div className="absolute inset-0 z-10 flex items-end bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100">
           <div className="flex w-full gap-2 p-3">
             <Button
               size="sm"
-              variant={inCart ? "secondary" : "default"}
               className="flex-1 text-xs"
               onClick={(e) => {
                 e.stopPropagation();
-                if (!inCart) {
-                  addItem({
-                    mangaId: manga.id,
-                    title: manga.title,
-                    imageUrl: manga.imageUrl,
-                    price: 1.0,
-                    quantity: 1,
-                    source: "manual",
-                    addedAt: new Date(),
-                  });
-                }
+                router.push(`/catalogue/${manga.id}`);
               }}
-              disabled={inCart}
             >
-              <ShoppingCart data-icon="inline-start" className="size-3.5" />
-              {inCart ? "En carrito" : "Agregar"}
+              Ver volúmenes
             </Button>
             <Button
               size="icon-sm"
