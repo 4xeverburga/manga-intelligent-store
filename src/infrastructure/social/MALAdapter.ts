@@ -14,11 +14,32 @@ export class MALAdapter {
       ]);
 
     if (profileRes.status === "rejected" || !profileRes.value.ok) {
-      const status =
-        profileRes.status === "fulfilled" ? profileRes.value.status : 0;
+      if (profileRes.status === "rejected") {
+        console.error(
+          `[MAL] Profile fetch rejected for "${username}":`,
+          profileRes.reason
+        );
+        throw new Error("No se pudo conectar con MyAnimeList");
+      }
+
+      const { status, statusText } = profileRes.value;
+      let body = "";
+      try {
+        body = await profileRes.value.text();
+      } catch {}
+
+      console.error(
+        `[MAL] Profile fetch failed for "${username}": ${status} ${statusText}`,
+        body.slice(0, 300)
+      );
+
       if (status === 404)
         throw new Error("Usuario no encontrado en MyAnimeList");
-      throw new Error("No se pudo conectar con MyAnimeList");
+      if (status === 429)
+        throw new Error("MAL rate-limit alcanzado. Intenta en unos segundos.");
+      throw new Error(
+        `No se pudo conectar con MyAnimeList (HTTP ${status})`
+      );
     }
 
     const profileData = await profileRes.value.json();
