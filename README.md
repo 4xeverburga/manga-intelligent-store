@@ -237,6 +237,10 @@ The system prompt instructs the AI to always search before recommending, never i
 - Added Vitest with integration tests for similarity search
 - Added ProfileServiceAdapter implementing IProfileService port
 
+## Roadmap / TODO
+
+- [ ] **Spanish localization** — Add `title_es` and `synopsis_es` columns to the `mangas` table. Create a batch translation script (Gemini) to populate them post-seed. Keep English embeddings (cross-language similarity works via multilingual `gemini-embedding-001`). Add `embedding_es` only if search quality degrades. Map genres to Spanish at the application layer (static lookup, not DB).
+
 ## Known Issues / Notes
 
 - `gemini-2.0-flash` is deprecated (shutdown June 1, 2026). Migrate to `gemini-3-flash-preview` or `gemini-2.5-flash-lite` before then. Set `GEMINI_MODEL` env var to switch.
