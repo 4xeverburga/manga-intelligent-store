@@ -203,7 +203,7 @@ export default function CheckoutPage() {
         purchasenumber: purchaseNumber,
         amount: amount.toFixed(2),
         cardholderemail: "customer@hablemosmanga.com",
-        expirationminutes: 3,
+        expirationminutes: 5,
         timeouturl: `${window.location.origin}/checkout?status=timeout`,
         merchantlogo: `${window.location.origin}/logo.png`,
         formbuttoncolor: "#dc2626",

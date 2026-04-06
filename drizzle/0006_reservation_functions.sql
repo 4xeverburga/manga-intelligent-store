@@ -12,7 +12,7 @@ CREATE OR REPLACE FUNCTION reserve_stock(
   p_total_amount real,
   p_item_count integer,
   p_items jsonb,
-  p_ttl_seconds integer DEFAULT 180
+  p_ttl_seconds integer DEFAULT 300
 )
 RETURNS jsonb
 LANGUAGE plpgsql
