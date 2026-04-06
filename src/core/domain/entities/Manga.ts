@@ -11,3 +11,7 @@ export interface Manga {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface MangaWithSimilarity extends Manga {
+  similarity: number;
+}

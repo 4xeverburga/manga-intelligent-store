@@ -1,4 +1,8 @@
-export type { IMangaRepository } from "./IMangaRepository";
+export type {
+  IMangaRepository,
+  SearchFilters,
+  PaginatedResult,
+} from "./IMangaRepository";
 export type { IAIService, EmbeddingResult, ChatMessage } from "./IAIService";
 export type { IProfileService } from "./IProfileService";
 export type {

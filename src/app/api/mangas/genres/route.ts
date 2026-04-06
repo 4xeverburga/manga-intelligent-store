@@ -1,15 +1,10 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/infrastructure/db/client";
+import { SupabaseMangaRepository } from "@/infrastructure/db/DrizzleMangaRepository";
+import { GetAvailableGenres } from "@/core/application/use-cases/GetAvailableGenres";
+
+const getAvailableGenres = new GetAvailableGenres(new SupabaseMangaRepository());
 
 export async function GET() {
-  const { data: mangas } = await supabase
-    .from("mangas")
-    .select("genres");
-
-  const genreSet = new Set<string>();
-  (mangas ?? []).forEach((m) =>
-    (m.genres as string[]).forEach((g) => genreSet.add(g))
-  );
-
-  return NextResponse.json([...genreSet].sort());
+  const genres = await getAvailableGenres.execute();
+  return NextResponse.json(genres);
 }

@@ -1,11 +1,14 @@
 import { streamText, tool, stepCountIs, convertToModelMessages } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
-import { supabase } from "@/infrastructure/db/client";
+import { SupabaseMangaRepository } from "@/infrastructure/db/DrizzleMangaRepository";
 import { GeminiAdapter } from "@/infrastructure/ai/GeminiAdapter";
+import { SemanticSearchMangas } from "@/core/application/use-cases/SemanticSearchMangas";
 import { SYSTEM_PROMPT } from "@/infrastructure/ai/prompts";
 
+const mangaRepo = new SupabaseMangaRepository();
 const ai = new GeminiAdapter();
+const semanticSearch = new SemanticSearchMangas(mangaRepo, ai);
 
 export async function POST(req: Request) {
   const { messages: uiMessages, profileContext } = await req.json();
@@ -60,26 +63,20 @@ IMPORTANTE: Ya tienes los datos del usuario. NO le preguntes qu\u00e9 g\u00e9ner
             ),
         }),
         execute: async ({ query }) => {
-          const { embedding } = await ai.generateEmbedding(query);
-          const { data: results } = await supabase.rpc("match_mangas", {
-            query_embedding: JSON.stringify(embedding),
-            match_threshold: 0.35,
-            match_count: 8,
+          const results = await semanticSearch.execute({
+            query,
+            threshold: 0.35,
+            limit: 8,
           });
-          return ((results ?? []) as Array<Record<string, unknown>>).map(
-            (r) => ({
-              id: r.id,
-              title: r.title,
-              synopsis:
-                typeof r.synopsis === "string"
-                  ? r.synopsis.slice(0, 200)
-                  : "",
-              genres: r.genres,
-              score: r.score,
-              imageUrl: r.image_url,
-              similarity: r.similarity,
-            })
-          );
+          return results.map((r) => ({
+            id: r.id,
+            title: r.title,
+            synopsis: r.synopsis.slice(0, 200),
+            genres: r.genres,
+            score: r.score,
+            imageUrl: r.imageUrl,
+            similarity: r.similarity,
+          }));
         },
       }),
 
@@ -95,14 +92,7 @@ IMPORTANTE: Ya tienes los datos del usuario. NO le preguntes qu\u00e9 g\u00e9ner
             .describe("Razón breve de por qué se recomienda"),
         }),
         execute: async ({ mangaId, title, reason }) => {
-          // Verify manga exists in DB
-          const { data: manga } = await supabase
-            .from("mangas")
-            .select("id, title")
-            .eq("id", mangaId)
-            .limit(1)
-            .single();
-
+          const manga = await mangaRepo.findById(mangaId);
           if (!manga) {
             return { success: false, error: "Manga not found in database" };
           }
@@ -141,26 +131,20 @@ IMPORTANTE: Ya tienes los datos del usuario. NO le preguntes qu\u00e9 g\u00e9ner
           if (similarTo) parts.push(`Similar to: ${similarTo}`);
           const query = parts.join(". ") || "popular manga recommendations";
 
-          const { embedding } = await ai.generateEmbedding(query);
-          const { data: results } = await supabase.rpc("match_mangas", {
-            query_embedding: JSON.stringify(embedding),
-            match_threshold: 0.3,
-            match_count: 6,
+          const results = await semanticSearch.execute({
+            query,
+            threshold: 0.3,
+            limit: 6,
           });
-          return ((results ?? []) as Array<Record<string, unknown>>).map(
-            (r) => ({
-              id: r.id,
-              title: r.title,
-              synopsis:
-                typeof r.synopsis === "string"
-                  ? r.synopsis.slice(0, 200)
-                  : "",
-              genres: r.genres,
-              score: r.score,
-              imageUrl: r.image_url,
-              similarity: r.similarity,
-            })
-          );
+          return results.map((r) => ({
+            id: r.id,
+            title: r.title,
+            synopsis: r.synopsis.slice(0, 200),
+            genres: r.genres,
+            score: r.score,
+            imageUrl: r.imageUrl,
+            similarity: r.similarity,
+          }));
         },
       }),
     },

@@ -1,66 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/infrastructure/db/client";
+import { SupabaseMangaRepository } from "@/infrastructure/db/DrizzleMangaRepository";
+import { SearchMangas } from "@/core/application/use-cases/SearchMangas";
+
+const searchMangas = new SearchMangas(new SupabaseMangaRepository());
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
-  const page = Math.max(1, Number(searchParams.get("page") ?? 1));
-  const limit = Math.min(48, Math.max(1, Number(searchParams.get("limit") ?? 24)));
+  const page = Number(searchParams.get("page") ?? 1);
+  const limit = Number(searchParams.get("limit") ?? 24);
   const genresParam = searchParams.get("genres");
-  const search = searchParams.get("search")?.trim();
-  const offset = (page - 1) * limit;
+  const search = searchParams.get("search")?.trim() || undefined;
 
-  // Build count query
-  let countQuery = supabase
-    .from("mangas")
-    .select("*", { count: "exact", head: true });
+  const genres = genresParam
+    ? genresParam.split(",").map((g) => g.trim()).filter(Boolean)
+    : undefined;
 
-  // Build data query
-  let dataQuery = supabase
-    .from("mangas")
-    .select("id, jikan_id, title, synopsis, genres, image_url, score, popularity")
-    .order("popularity", { ascending: true })
-    .range(offset, offset + limit - 1);
+  const result = await searchMangas.execute({ page, limit, genres, search });
 
-  if (genresParam) {
-    const genres = genresParam.split(",").map((g) => g.trim()).filter(Boolean);
-    if (genres.length > 0) {
-      // AND filter: manga must have ALL selected genres
-      countQuery = countQuery.contains("genres", genres);
-      dataQuery = dataQuery.contains("genres", genres);
-    }
-  }
-
-  if (search) {
-    countQuery = countQuery.ilike("title", `%${search}%`);
-    dataQuery = dataQuery.ilike("title", `%${search}%`);
-  }
-
-  const [{ count: total }, { data }] = await Promise.all([
-    countQuery,
-    dataQuery,
-  ]);
-
-  const totalCount = total ?? 0;
-  const totalPages = Math.ceil(totalCount / limit);
-  const nextPage = page < totalPages ? page + 1 : null;
-
-  // Map snake_case to camelCase for frontend
-  const mapped = (data ?? []).map((r) => ({
-    id: r.id,
-    jikanId: r.jikan_id,
-    title: r.title,
-    synopsis: r.synopsis,
-    genres: r.genres,
-    imageUrl: r.image_url,
-    score: r.score,
-    popularity: r.popularity,
+  const mapped = result.data.map((m) => ({
+    id: m.id,
+    jikanId: m.jikanId,
+    title: m.title,
+    synopsis: m.synopsis,
+    genres: m.genres,
+    imageUrl: m.imageUrl,
+    score: m.score,
+    popularity: m.popularity,
   }));
 
   return NextResponse.json({
     data: mapped,
-    nextPage,
-    total: totalCount,
-    page,
-    limit,
+    nextPage: result.nextPage,
+    total: result.total,
+    page: result.page,
+    limit: result.limit,
   });
 }

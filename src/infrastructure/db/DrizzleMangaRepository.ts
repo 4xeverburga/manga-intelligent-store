@@ -1,5 +1,9 @@
-import type { Manga } from "@/core/domain/entities/Manga";
-import type { IMangaRepository } from "@/core/domain/ports/IMangaRepository";
+import type { Manga, MangaWithSimilarity } from "@/core/domain/entities/Manga";
+import type {
+  IMangaRepository,
+  SearchFilters,
+  PaginatedResult,
+} from "@/core/domain/ports/IMangaRepository";
 import { supabase } from "./client";
 
 interface MangaRow {
@@ -68,27 +72,68 @@ export class SupabaseMangaRepository implements IMangaRepository {
 
   async findSimilar(
     embedding: number[],
-    limit: number = 10
-  ): Promise<Manga[]> {
+    options: { limit?: number; threshold?: number } = {}
+  ): Promise<MangaWithSimilarity[]> {
+    const { limit = 10, threshold = 0.3 } = options;
     const { data } = await supabase.rpc("match_mangas", {
       query_embedding: JSON.stringify(embedding),
-      match_threshold: 0.3,
+      match_threshold: threshold,
       match_count: limit,
     });
     return ((data ?? []) as Array<MangaRow & { similarity: number }>).map(
       (row) => ({
-        id: row.id,
-        jikanId: row.jikan_id,
-        title: row.title,
-        synopsis: row.synopsis,
-        genres: row.genres,
-        imageUrl: row.image_url,
-        score: row.score ?? 0,
-        popularity: row.popularity ?? 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        ...this.toDomain(row),
+        similarity: row.similarity,
       })
     );
+  }
+
+  async searchPaginated(
+    filters: SearchFilters
+  ): Promise<PaginatedResult<Manga>> {
+    const { page, limit, genres, search } = filters;
+    const offset = (page - 1) * limit;
+
+    let countQuery = supabase
+      .from("mangas")
+      .select("*", { count: "exact", head: true });
+
+    let dataQuery = supabase
+      .from("mangas")
+      .select(
+        "id, jikan_id, title, synopsis, genres, image_url, score, popularity, created_at, updated_at"
+      )
+      .order("popularity", { ascending: true })
+      .range(offset, offset + limit - 1);
+
+    if (genres && genres.length > 0) {
+      countQuery = countQuery.contains("genres", genres);
+      dataQuery = dataQuery.contains("genres", genres);
+    }
+
+    if (search) {
+      countQuery = countQuery.ilike("title", `%${search}%`);
+      dataQuery = dataQuery.ilike("title", `%${search}%`);
+    }
+
+    const [{ count: total }, { data }] = await Promise.all([
+      countQuery,
+      dataQuery,
+    ]);
+
+    return {
+      data: (data ?? []).map((r) => this.toDomain(r as MangaRow)),
+      total: total ?? 0,
+    };
+  }
+
+  async getDistinctGenres(): Promise<string[]> {
+    const { data } = await supabase.from("mangas").select("genres");
+    const genreSet = new Set<string>();
+    (data ?? []).forEach((m) =>
+      (m.genres as string[]).forEach((g) => genreSet.add(g))
+    );
+    return [...genreSet].sort();
   }
 
   async upsertFromSeed(
@@ -124,7 +169,7 @@ export class SupabaseMangaRepository implements IMangaRepository {
     return count ?? 0;
   }
 
-  private toDomain(row: MangaRow): Manga {
+  private toDomain(row: Partial<MangaRow> & Pick<MangaRow, 'id' | 'jikan_id' | 'title' | 'synopsis' | 'genres' | 'image_url'>): Manga {
     return {
       id: row.id,
       jikanId: row.jikan_id,
@@ -135,8 +180,8 @@ export class SupabaseMangaRepository implements IMangaRepository {
       score: row.score ?? 0,
       popularity: row.popularity ?? 0,
       embedding: row.embedding ?? undefined,
-      createdAt: new Date(row.created_at),
-      updatedAt: new Date(row.updated_at),
+      createdAt: row.created_at ? new Date(row.created_at) : new Date(),
+      updatedAt: row.updated_at ? new Date(row.updated_at) : new Date(),
     };
   }
 }

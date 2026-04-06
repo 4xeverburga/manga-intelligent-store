@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { NiubizAdapter } from "@/infrastructure/payment/NiubizAdapter";
+import { CreateCheckoutSession } from "@/core/application/use-cases/CreateCheckoutSession";
 
-const niubiz = new NiubizAdapter();
+const createCheckoutSession = new CreateCheckoutSession(new NiubizAdapter());
 
 export async function POST(req: Request) {
   try {
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const session = await niubiz.createSession(amount, orderId);
+    const session = await createCheckoutSession.execute({ amount, orderId });
 
     return NextResponse.json({
       sessionToken: session.sessionToken,

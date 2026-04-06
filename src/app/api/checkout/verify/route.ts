@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { NiubizAdapter } from "@/infrastructure/payment/NiubizAdapter";
+import { VerifyTransaction } from "@/core/application/use-cases/VerifyTransaction";
 
-const niubiz = new NiubizAdapter();
+const verifyTransaction = new VerifyTransaction(new NiubizAdapter());
 
 export async function POST(req: Request) {
   try {
@@ -15,10 +16,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const result = await niubiz.verifyTransaction(
+    const result = await verifyTransaction.execute({
       transactionId,
-      merchantId || process.env.NIUBIZ_MERCHANT_ID!
-    );
+      merchantId: merchantId || process.env.NIUBIZ_MERCHANT_ID!,
+    });
 
     return NextResponse.json(result);
   } catch (error) {

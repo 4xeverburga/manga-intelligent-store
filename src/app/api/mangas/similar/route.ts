@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/infrastructure/db/client";
+import { SupabaseMangaRepository } from "@/infrastructure/db/DrizzleMangaRepository";
+import { FindSimilarMangas } from "@/core/application/use-cases/FindSimilarMangas";
+
+const findSimilarMangas = new FindSimilarMangas(new SupabaseMangaRepository());
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -12,45 +15,25 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Get the manga's embedding
-  const { data: manga } = await supabase
-    .from("mangas")
-    .select("id, embedding")
-    .eq("id", mangaId)
-    .limit(1)
-    .single();
+  try {
+    const similar = await findSimilarMangas.execute(mangaId);
 
-  if (!manga) {
-    return NextResponse.json({ error: "Manga not found" }, { status: 404 });
-  }
-
-  if (!manga.embedding) {
-    return NextResponse.json(
-      { error: "Manga has no embedding" },
-      { status: 422 }
-    );
-  }
-
-  const { data: results } = await supabase.rpc("match_mangas", {
-    query_embedding: JSON.stringify(manga.embedding),
-    match_threshold: 0.3,
-    match_count: 7,
-  });
-
-  // Filter out the source manga itself
-  const similar = ((results ?? []) as Array<Record<string, unknown>>)
-    .filter((r) => r.id !== mangaId)
-    .slice(0, 6)
-    .map((r) => ({
+    const mapped = similar.map((r) => ({
       id: r.id,
       title: r.title,
-      synopsis:
-        typeof r.synopsis === "string" ? r.synopsis.slice(0, 200) : "",
+      synopsis: r.synopsis.slice(0, 200),
       genres: r.genres,
       score: r.score,
-      imageUrl: r.image_url,
+      imageUrl: r.imageUrl,
       similarity: r.similarity,
     }));
 
-  return NextResponse.json(similar);
+    return NextResponse.json(mapped);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    const status = message === "Manga not found" ? 404
+      : message === "Manga has no embedding" ? 422
+      : 500;
+    return NextResponse.json({ error: message }, { status });
+  }
 }
