@@ -65,10 +65,31 @@ export default function CheckoutPage() {
     setErrorMsg("");
 
     try {
+      // Step 1: Validate stock before payment
+      const validateRes = await fetch("/api/checkout/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((i) => ({
+            volumeId: i.volumeId,
+            title: i.title,
+            quantity: i.quantity,
+          })),
+        }),
+      });
+
+      const stockResult = await validateRes.json();
+      if (!stockResult.valid) {
+        const names = (stockResult.insufficient as { title: string }[])
+          .map((i) => i.title)
+          .join(", ");
+        throw new Error(`Stock insuficiente para: ${names}`);
+      }
+
+      // Step 2: Create payment session
       const orderId = `ORD-${Date.now()}`;
       const amount = totalPrice;
 
-      // Get session from our server
       const res = await fetch("/api/checkout/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -101,7 +122,6 @@ export default function CheckoutPage() {
         formbuttoncolor: "#dc2626",
         action: `${window.location.origin}/checkout?status=callback`,
         complete(params: Record<string, string>) {
-          // Called after Lightbox completes
           handleVerify(params.transactionToken, merchantId);
         },
       });
@@ -114,7 +134,7 @@ export default function CheckoutPage() {
         err instanceof Error ? err.message : "Error al procesar el pago"
       );
     }
-  }, [items.length, totalPrice]);
+  }, [items, totalPrice]);
 
   const handleVerify = async (
     transactionId: string,
@@ -124,7 +144,16 @@ export default function CheckoutPage() {
       const res = await fetch("/api/checkout/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transactionId, merchantId }),
+        body: JSON.stringify({
+          transactionId,
+          merchantId,
+          items: items.map((i) => ({
+            volumeId: i.volumeId,
+            title: i.title,
+            quantity: i.quantity,
+            unitPrice: i.price,
+          })),
+        }),
       });
 
       const result = await res.json();

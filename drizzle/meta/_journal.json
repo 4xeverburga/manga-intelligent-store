@@ -29,6 +29,13 @@
       "when": 1775503039474,
       "tag": "0003_thankful_big_bertha",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1775506090675,
+      "tag": "0004_typical_kang",
+      "breakpoints": true
     }
   ]
 }

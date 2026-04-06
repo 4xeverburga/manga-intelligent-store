@@ -9,7 +9,9 @@ import {
   uniqueIndex,
   index,
   customType,
+  check,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 const vector = customType<{
   data: number[];
@@ -87,19 +89,59 @@ export type SelectMangaVolume = typeof mangaVolumes.$inferSelect;
 export type InsertMangaVolume = typeof mangaVolumes.$inferInsert;
 
 // ── Inventory (per volume) ───────────────────────────
-export const inventory = pgTable("inventory", {
+export const inventory = pgTable(
+  "inventory",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    volumeId: uuid("volume_id")
+      .notNull()
+      .references(() => mangaVolumes.id, { onDelete: "cascade" })
+      .unique(),
+    stock: integer("stock").notNull().default(0),
+    canBeDropshipped: boolean("can_be_dropshipped").notNull().default(false),
+    dropshippingNotes: text("dropshipping_notes"),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [check("stock_non_negative", sql`${table.stock} >= 0`)]
+);
+
+export type SelectInventory = typeof inventory.$inferSelect;
+export type InsertInventory = typeof inventory.$inferInsert;
+
+// ── Orders ───────────────────────────────────────────
+export const orders = pgTable("orders", {
   id: uuid("id").primaryKey().defaultRandom(),
-  volumeId: uuid("volume_id")
-    .notNull()
-    .references(() => mangaVolumes.id, { onDelete: "cascade" })
-    .unique(),
-  stock: integer("stock").notNull().default(0),
-  canBeDropshipped: boolean("can_be_dropshipped").notNull().default(false),
-  dropshippingNotes: text("dropshipping_notes"),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
+  niubizTransactionId: text("niubiz_transaction_id"),
+  status: text("status").notNull().default("pending"),
+  totalAmount: real("total_amount").notNull(),
+  itemCount: integer("item_count").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
 });
 
-export type SelectInventory = typeof inventory.$inferSelect;
-export type InsertInventory = typeof inventory.$inferInsert;
+export type SelectOrder = typeof orders.$inferSelect;
+export type InsertOrder = typeof orders.$inferInsert;
+
+// ── Order Items ──────────────────────────────────────
+export const orderItems = pgTable(
+  "order_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    volumeId: uuid("volume_id")
+      .notNull()
+      .references(() => mangaVolumes.id, { onDelete: "restrict" }),
+    title: text("title").notNull(),
+    quantity: integer("quantity").notNull(),
+    unitPrice: real("unit_price").notNull(),
+  },
+  (table) => [index("order_items_order_id_idx").on(table.orderId)]
+);
+
+export type SelectOrderItem = typeof orderItems.$inferSelect;
+export type InsertOrderItem = typeof orderItems.$inferInsert;
