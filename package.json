@@ -11,6 +11,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed.ts",
+    "db:seed:inventory": "tsx scripts/seed-inventory.ts",
     "docker:build": "docker build -t hablemos-manga .",
     "docker:run": "docker run -p 3000:3000 --env-file .env.local hablemos-manga",
     "test": "vitest run",
