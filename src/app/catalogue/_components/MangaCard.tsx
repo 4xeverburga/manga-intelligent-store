@@ -60,7 +60,7 @@ export function MangaCard({ manga, onFindSimilar }: MangaCardProps) {
         )}
 
         {/* Hover overlay with actions */}
-        <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+        <div className="absolute inset-0 z-10 flex items-end bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100">
           <div className="flex w-full gap-2 p-3">
             <Button
               size="sm"
@@ -97,7 +97,7 @@ export function MangaCard({ manga, onFindSimilar }: MangaCardProps) {
       </div>
 
       {/* Info */}
-      <Link href={`/catalogue/${manga.id}`} className="flex flex-1 flex-col gap-1.5 p-3">
+      <Link href={`/catalogue/${manga.id}`} className="flex flex-1 flex-col gap-1.5 p-3 after:absolute after:inset-0 after:content-['']">
         <h3 className="line-clamp-2 text-sm font-medium leading-tight text-foreground">
           {manga.title}
         </h3>
