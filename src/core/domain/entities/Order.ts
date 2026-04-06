@@ -8,9 +8,10 @@ export interface OrderItem {
 export interface Order {
   id: string;
   niubizTransactionId: string | null;
-  status: "pending" | "completed" | "failed";
+  status: "pending" | "completed" | "failed" | "expired";
   totalAmount: number;
   itemCount: number;
   items: OrderItem[];
+  expiresAt: Date | null;
   createdAt: Date;
 }

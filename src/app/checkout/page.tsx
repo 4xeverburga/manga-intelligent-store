@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -10,6 +9,7 @@ import {
   CheckCircle2,
   XCircle,
   Loader2,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,13 @@ import {
 } from "@/stores/cart";
 import { useShallow } from "zustand/react/shallow";
 
-type CheckoutStatus = "idle" | "loading" | "paying" | "success" | "error";
+type CheckoutStatus =
+  | "idle"
+  | "reserving"
+  | "reserved"
+  | "paying"
+  | "success"
+  | "error";
 
 declare global {
   interface Window {
@@ -33,7 +39,6 @@ declare global {
 }
 
 export default function CheckoutPage() {
-  const router = useRouter();
   const items = useCartStore(useShallow((s) => s.items));
   const totalItems = useCartStore(selectTotalItems);
   const totalPrice = useCartStore(selectTotalPrice);
@@ -43,6 +48,12 @@ export default function CheckoutPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [txnId, setTxnId] = useState("");
   const [scriptLoaded, setScriptLoaded] = useState(false);
+
+  // Reservation state
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const expiresAtRef = useRef<number>(0);
 
   // Load Niubiz Lightbox script
   useEffect(() => {
@@ -59,14 +70,75 @@ export default function CheckoutPage() {
     document.body.appendChild(script);
   }, []);
 
-  const handlePay = useCallback(async () => {
+  // Countdown timer
+  useEffect(() => {
+    if (status !== "reserved" && status !== "paying") {
+      if (timerRef.current) clearInterval(timerRef.current);
+      return;
+    }
+
+    timerRef.current = setInterval(() => {
+      const remaining = Math.max(
+        0,
+        Math.floor((expiresAtRef.current - Date.now()) / 1000)
+      );
+      setSecondsLeft(remaining);
+
+      if (remaining <= 0) {
+        clearInterval(timerRef.current!);
+        // Only expire if we haven't completed the payment
+        if (status === "reserved") {
+          handleExpired();
+        }
+      }
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [status]);
+
+  const handleExpired = useCallback(async () => {
+    if (orderId) {
+      await fetch("/api/checkout/release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId }),
+      }).catch(() => {});
+    }
+    setStatus("error");
+    setErrorMsg(
+      "Tu reserva ha expirado. El stock fue liberado. Puedes intentar de nuevo."
+    );
+    setOrderId(null);
+  }, [orderId]);
+
+  // Release reservation when leaving the page
+  useEffect(() => {
+    const releaseOnUnload = () => {
+      if (orderId && status === "reserved") {
+        navigator.sendBeacon(
+          "/api/checkout/release",
+          new Blob(
+            [JSON.stringify({ orderId })],
+            { type: "application/json" }
+          )
+        );
+      }
+    };
+
+    window.addEventListener("beforeunload", releaseOnUnload);
+    return () => window.removeEventListener("beforeunload", releaseOnUnload);
+  }, [orderId, status]);
+
+  // Step 1: Reserve stock
+  const handleReserve = useCallback(async () => {
     if (items.length === 0) return;
-    setStatus("loading");
+    setStatus("reserving");
     setErrorMsg("");
 
     try {
-      // Step 1: Validate stock before payment
-      const validateRes = await fetch("/api/checkout/validate", {
+      const res = await fetch("/api/checkout/reserve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -74,31 +146,49 @@ export default function CheckoutPage() {
             volumeId: i.volumeId,
             title: i.title,
             quantity: i.quantity,
+            unitPrice: i.price,
           })),
         }),
       });
 
-      const stockResult = await validateRes.json();
-      if (!stockResult.valid) {
-        const names = (stockResult.insufficient as { title: string }[])
-          .map((i) => i.title)
-          .join(", ");
-        throw new Error(`Stock insuficiente para: ${names}`);
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(
+          errBody.error || "No se pudo reservar el stock"
+        );
       }
 
-      // Step 2: Create payment session
-      const orderId = `ORD-${Date.now()}`;
+      const { orderId: reservedId, expiresAt } = await res.json();
+      setOrderId(reservedId);
+      expiresAtRef.current = new Date(expiresAt).getTime();
+      setSecondsLeft(
+        Math.floor((expiresAtRef.current - Date.now()) / 1000)
+      );
+      setStatus("reserved");
+    } catch (err) {
+      setStatus("error");
+      setErrorMsg(
+        err instanceof Error ? err.message : "Error al reservar el stock"
+      );
+    }
+  }, [items]);
+
+  // Step 2: Open Niubiz Lightbox (only after reservation)
+  const handlePay = useCallback(async () => {
+    if (!orderId) return;
+    setStatus("paying");
+
+    try {
       const amount = totalPrice;
+      const purchaseNumber = `ORD-${Date.now()}`;
 
       const res = await fetch("/api/checkout/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount, orderId }),
+        body: JSON.stringify({ amount, orderId: purchaseNumber }),
       });
 
-      if (!res.ok) {
-        throw new Error("Failed to create session");
-      }
+      if (!res.ok) throw new Error("Failed to create session");
 
       const { sessionToken, merchantId } = await res.json();
 
@@ -106,17 +196,14 @@ export default function CheckoutPage() {
         throw new Error("Payment script not loaded");
       }
 
-      setStatus("paying");
-
-      // Configure and open Niubiz Lightbox
       window.VisanetCheckout.configure({
         sessiontoken: sessionToken,
         channel: "web",
         merchantid: merchantId,
-        purchasenumber: orderId,
+        purchasenumber: purchaseNumber,
         amount: amount.toFixed(2),
         cardholderemail: "customer@hablemosmanga.com",
-        expirationminutes: 20,
+        expirationminutes: 3,
         timeouturl: `${window.location.origin}/checkout?status=timeout`,
         merchantlogo: `${window.location.origin}/logo.png`,
         formbuttoncolor: "#dc2626",
@@ -129,13 +216,23 @@ export default function CheckoutPage() {
       window.VisanetCheckout.open();
     } catch (err) {
       console.error("Payment error:", err);
+      // Release reservation on error
+      if (orderId) {
+        await fetch("/api/checkout/release", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId }),
+        }).catch(() => {});
+      }
       setStatus("error");
       setErrorMsg(
         err instanceof Error ? err.message : "Error al procesar el pago"
       );
+      setOrderId(null);
     }
-  }, [items, totalPrice]);
+  }, [orderId, totalPrice]);
 
+  // Step 3: Verify + confirm the reservation
   const handleVerify = async (
     transactionId: string,
     merchantId: string
@@ -144,32 +241,39 @@ export default function CheckoutPage() {
       const res = await fetch("/api/checkout/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          transactionId,
-          merchantId,
-          items: items.map((i) => ({
-            volumeId: i.volumeId,
-            title: i.title,
-            quantity: i.quantity,
-            unitPrice: i.price,
-          })),
-        }),
+        body: JSON.stringify({ transactionId, merchantId, orderId }),
       });
 
       const result = await res.json();
 
       if (result.success) {
+        if (timerRef.current) clearInterval(timerRef.current);
         setTxnId(result.transactionId || transactionId);
         setStatus("success");
         clearCart();
       } else {
         setStatus("error");
         setErrorMsg(result.errorMessage || "La transacción no fue aprobada");
+        setOrderId(null);
       }
     } catch {
       setStatus("error");
       setErrorMsg("Error al verificar la transacción");
+      setOrderId(null);
     }
+  };
+
+  const resetToIdle = () => {
+    setStatus("idle");
+    setErrorMsg("");
+    setOrderId(null);
+    setSecondsLeft(0);
+  };
+
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
   // Success screen
@@ -209,7 +313,7 @@ export default function CheckoutPage() {
           <h1 className="text-2xl font-bold">Error en el pago</h1>
           <p className="max-w-sm text-muted-foreground">{errorMsg}</p>
           <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setStatus("idle")}>
+            <Button variant="outline" onClick={resetToIdle}>
               Reintentar
             </Button>
             <Link href="/app">
@@ -296,25 +400,72 @@ export default function CheckoutPage() {
 
         {/* Payment */}
         <div className="flex flex-col items-center justify-center rounded-lg border border-border/40 bg-card p-6">
+          {/* Timer badge — visible when reservation is active */}
+          {(status === "reserved" || status === "paying") && (
+            <div
+              className={`mb-4 flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ${
+                secondsLeft <= 30
+                  ? "bg-destructive/10 text-destructive"
+                  : "bg-primary/10 text-primary"
+              }`}
+            >
+              <Clock className="h-4 w-4" />
+              <span>Reserva expira en {formatTime(secondsLeft)}</span>
+            </div>
+          )}
+
           <ShoppingBag className="mb-4 h-12 w-12 text-muted-foreground/30" />
           <p className="mb-6 text-center text-sm text-muted-foreground">
-            Pago simbólico procesado por Niubiz Sandbox
+            {status === "reserved" || status === "paying"
+              ? "Stock reservado. Completa el pago antes de que expire."
+              : "Pago simbólico procesado por Niubiz Sandbox"}
           </p>
-          <Button
-            onClick={handlePay}
-            disabled={status === "loading" || status === "paying" || !scriptLoaded}
-            className="w-full max-w-xs bg-cta text-cta-foreground hover:bg-cta/90"
-            size="lg"
-          >
-            {status === "loading" || status === "paying" ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Procesando...
-              </>
-            ) : (
-              `Pagar S/ ${totalPrice.toFixed(2)}`
-            )}
-          </Button>
+
+          {/* Step 1: Reserve stock */}
+          {status === "idle" && (
+            <Button
+              onClick={handleReserve}
+              disabled={!scriptLoaded}
+              className="w-full max-w-xs bg-cta text-cta-foreground hover:bg-cta/90"
+              size="lg"
+            >
+              Reservar y Pagar S/ {totalPrice.toFixed(2)}
+            </Button>
+          )}
+
+          {status === "reserving" && (
+            <Button
+              disabled
+              className="w-full max-w-xs bg-cta text-cta-foreground"
+              size="lg"
+            >
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Reservando stock...
+            </Button>
+          )}
+
+          {/* Step 2: Open Lightbox */}
+          {status === "reserved" && (
+            <Button
+              onClick={handlePay}
+              className="w-full max-w-xs bg-cta text-cta-foreground hover:bg-cta/90"
+              size="lg"
+            >
+              Abrir pasarela de pago
+            </Button>
+          )}
+
+          {status === "paying" && (
+            <Button
+              disabled
+              className="w-full max-w-xs bg-cta text-cta-foreground"
+              size="lg"
+            >
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Procesando pago...
+            </Button>
+          )}
+
           <p className="mt-3 text-center text-[10px] text-muted-foreground">
             Tarjeta de prueba: 4474 1100 0000 0004 &middot; Exp: 12/25 &middot;
             CVV: 111

@@ -117,6 +117,7 @@ export const orders = pgTable("orders", {
   status: text("status").notNull().default("pending"),
   totalAmount: real("total_amount").notNull(),
   itemCount: integer("item_count").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),

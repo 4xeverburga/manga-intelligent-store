@@ -1,4 +1,4 @@
-import type { Order, OrderItem } from "@/core/domain/entities/Order";
+import type { OrderItem } from "@/core/domain/entities/Order";
 
 export interface StockCheckResult {
   volumeId: string;
@@ -8,6 +8,11 @@ export interface StockCheckResult {
   canBeDropshipped: boolean;
 }
 
+export interface ReservationResult {
+  orderId: string;
+  expiresAt: string; // ISO timestamp
+}
+
 export interface IOrderService {
   /** Validate stock for all items. Returns items that are insufficient. */
   validateStock(
@@ -15,11 +20,23 @@ export interface IOrderService {
   ): Promise<StockCheckResult[]>;
 
   /**
-   * Atomically decrement stock and create the order.
-   * Throws if any item would go below 0 (CHECK constraint).
+   * Atomically decrement stock and create a pending order with TTL.
+   * Throws "INSUFFICIENT_STOCK" if any item would go below 0.
    */
-  fulfillOrder(
+  reserveStock(
     items: OrderItem[],
-    niubizTransactionId: string
-  ): Promise<Order>;
+    ttlSeconds?: number
+  ): Promise<ReservationResult>;
+
+  /**
+   * Mark a pending (non-expired) order as completed with the Niubiz txn ID.
+   * Throws if the order is expired or not pending.
+   */
+  confirmOrder(orderId: string, niubizTransactionId: string): Promise<void>;
+
+  /**
+   * Restore stock for a pending order and mark it expired.
+   * No-op if the order is already completed or expired.
+   */
+  releaseReservation(orderId: string): Promise<void>;
 }

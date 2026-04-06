@@ -1,20 +1,23 @@
 import type { IOrderService } from "@/core/domain/ports/IOrderService";
 import type { IPaymentProvider } from "@/core/domain/ports/IPaymentProvider";
-import type { Order, OrderItem } from "@/core/domain/entities/Order";
 
 interface Input {
+  orderId: string;
   transactionId: string;
   merchantId: string;
-  items: OrderItem[];
 }
 
-export class FulfillOrder {
+export class ConfirmOrder {
   constructor(
     private paymentProvider: IPaymentProvider,
     private orderService: IOrderService
   ) {}
 
-  async execute(input: Input): Promise<{ success: true; order: Order } | { success: false; errorMessage: string }> {
+  async execute(
+    input: Input
+  ): Promise<
+    { success: true; transactionId: string } | { success: false; errorMessage: string }
+  > {
     // 1. Verify payment with Niubiz
     const paymentResult = await this.paymentProvider.verifyTransaction(
       input.transactionId,
@@ -22,24 +25,30 @@ export class FulfillOrder {
     );
 
     if (!paymentResult.success) {
+      // Payment failed — release the reservation
+      await this.orderService.releaseReservation(input.orderId);
       return {
         success: false,
-        errorMessage: paymentResult.errorMessage ?? "La transacción no fue aprobada",
+        errorMessage:
+          paymentResult.errorMessage ?? "La transacción no fue aprobada",
       };
     }
 
-    // 2. Atomically decrement stock + create order
+    // 2. Confirm the existing reservation
     try {
-      const order = await this.orderService.fulfillOrder(
-        input.items,
+      await this.orderService.confirmOrder(
+        input.orderId,
         paymentResult.transactionId ?? input.transactionId
       );
-      return { success: true, order };
+      return {
+        success: true,
+        transactionId: paymentResult.transactionId ?? input.transactionId,
+      };
     } catch (err) {
       const message =
-        err instanceof Error && err.message === "INSUFFICIENT_STOCK"
-          ? "Algunos volúmenes ya no tienen stock disponible"
-          : "Error al procesar el pedido";
+        err instanceof Error && err.message === "RESERVATION_EXPIRED"
+          ? "Tu reserva expiró. El stock fue liberado."
+          : "Error al confirmar el pedido";
       return { success: false, errorMessage: message };
     }
   }

@@ -1,7 +1,8 @@
-import type { Order, OrderItem } from "@/core/domain/entities/Order";
+import type { OrderItem } from "@/core/domain/entities/Order";
 import type {
   IOrderService,
   StockCheckResult,
+  ReservationResult,
 } from "@/core/domain/ports/IOrderService";
 import { supabase } from "@/infrastructure/db/client";
 
@@ -32,7 +33,6 @@ export class SupabaseOrderService implements IOrderService {
       const available = inv?.stock ?? 0;
       const canBeDropshipped = inv?.canBeDropshipped ?? false;
 
-      // Available if we have enough stock OR it can be dropshipped
       if (available >= item.quantity || canBeDropshipped) continue;
 
       insufficient.push({
@@ -47,19 +47,17 @@ export class SupabaseOrderService implements IOrderService {
     return insufficient;
   }
 
-  async fulfillOrder(
+  async reserveStock(
     items: OrderItem[],
-    niubizTransactionId: string
-  ): Promise<Order> {
+    ttlSeconds = 180
+  ): Promise<ReservationResult> {
     const totalAmount = items.reduce(
       (acc, i) => acc + i.quantity * i.unitPrice,
       0
     );
     const itemCount = items.reduce((acc, i) => acc + i.quantity, 0);
 
-    // Call the atomic PG function via RPC
-    const { data, error } = await supabase.rpc("fulfill_order", {
-      p_transaction_id: niubizTransactionId,
+    const { data, error } = await supabase.rpc("reserve_stock", {
       p_total_amount: totalAmount,
       p_item_count: itemCount,
       p_items: items.map((i) => ({
@@ -68,29 +66,47 @@ export class SupabaseOrderService implements IOrderService {
         quantity: i.quantity,
         unit_price: i.unitPrice,
       })),
+      p_ttl_seconds: ttlSeconds,
     });
 
     if (error) {
-      // CHECK constraint violation or insufficient stock
       if (
         error.message.includes("stock_non_negative") ||
         error.message.includes("Insufficient stock")
       ) {
         throw new Error("INSUFFICIENT_STOCK");
       }
-      throw new Error(`Order fulfillment failed: ${error.message}`);
+      throw new Error(`Reservation failed: ${error.message}`);
     }
 
-    const orderId = (data as { order_id: string }).order_id;
+    const result = data as { order_id: string; expires_at: string };
+    return { orderId: result.order_id, expiresAt: result.expires_at };
+  }
 
-    return {
-      id: orderId,
-      niubizTransactionId,
-      status: "completed",
-      totalAmount,
-      itemCount,
-      items,
-      createdAt: new Date(),
-    };
+  async confirmOrder(
+    orderId: string,
+    niubizTransactionId: string
+  ): Promise<void> {
+    const { error } = await supabase.rpc("confirm_order", {
+      p_order_id: orderId,
+      p_transaction_id: niubizTransactionId,
+    });
+
+    if (error) {
+      if (error.message.includes("expired or not pending")) {
+        throw new Error("RESERVATION_EXPIRED");
+      }
+      throw new Error(`Confirm failed: ${error.message}`);
+    }
+  }
+
+  async releaseReservation(orderId: string): Promise<void> {
+    const { error } = await supabase.rpc("release_reservation", {
+      p_order_id: orderId,
+    });
+
+    if (error) {
+      throw new Error(`Release failed: ${error.message}`);
+    }
   }
 }

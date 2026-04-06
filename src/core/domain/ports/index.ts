@@ -10,4 +10,4 @@ export type {
   PaymentSession,
   PaymentResult,
 } from "./IPaymentProvider";
-export type { IOrderService, StockCheckResult } from "./IOrderService";
+export type { IOrderService, StockCheckResult, ReservationResult } from "./IOrderService";
