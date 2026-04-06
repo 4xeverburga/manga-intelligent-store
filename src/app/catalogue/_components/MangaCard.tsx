@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { ShoppingCart, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -96,7 +97,7 @@ export function MangaCard({ manga, onFindSimilar }: MangaCardProps) {
       </div>
 
       {/* Info */}
-      <div className="flex flex-1 flex-col gap-1.5 p-3">
+      <Link href={`/catalogue/${manga.id}`} className="flex flex-1 flex-col gap-1.5 p-3">
         <h3 className="line-clamp-2 text-sm font-medium leading-tight text-foreground">
           {manga.title}
         </h3>
@@ -107,7 +108,7 @@ export function MangaCard({ manga, onFindSimilar }: MangaCardProps) {
             </Badge>
           ))}
         </div>
-      </div>
+      </Link>
     </motion.div>
   );
 }
