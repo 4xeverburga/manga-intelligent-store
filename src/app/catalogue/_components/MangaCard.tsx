@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ShoppingCart, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,7 @@ function getScoreColor(score: number) {
 }
 
 export function MangaCard({ manga, onFindSimilar }: MangaCardProps) {
+  const router = useRouter();
   const addItem = useCartStore((s) => s.addItem);
   const items = useCartStore((s) => s.items);
   const inCart = items.some((i) => i.mangaId === manga.id);
@@ -37,7 +38,8 @@ export function MangaCard({ manga, onFindSimilar }: MangaCardProps) {
   return (
     <motion.div
       variants={fadeIn}
-      className="group relative flex flex-col overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10 transition-shadow hover:shadow-lg hover:shadow-primary/5 hover:ring-primary/20"
+      className="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10 transition-shadow hover:shadow-lg hover:shadow-primary/5 hover:ring-primary/20"
+      onClick={() => router.push(`/catalogue/${manga.id}`)}
     >
       {/* Cover image */}
       <div className="relative aspect-[3/4] overflow-hidden">
@@ -66,7 +68,8 @@ export function MangaCard({ manga, onFindSimilar }: MangaCardProps) {
               size="sm"
               variant={inCart ? "secondary" : "default"}
               className="flex-1 text-xs"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 if (!inCart) {
                   addItem({
                     mangaId: manga.id,
@@ -88,7 +91,10 @@ export function MangaCard({ manga, onFindSimilar }: MangaCardProps) {
               size="icon-sm"
               variant="outline"
               className="bg-background/80 backdrop-blur-sm"
-              onClick={onFindSimilar}
+              onClick={(e) => {
+                e.stopPropagation();
+                onFindSimilar();
+              }}
             >
               <Sparkles className="size-3.5" />
             </Button>
@@ -97,7 +103,7 @@ export function MangaCard({ manga, onFindSimilar }: MangaCardProps) {
       </div>
 
       {/* Info */}
-      <Link href={`/catalogue/${manga.id}`} className="flex flex-1 flex-col gap-1.5 p-3 after:absolute after:inset-0 after:content-['']">
+      <div className="flex flex-1 flex-col gap-1.5 p-3">
         <h3 className="line-clamp-2 text-sm font-medium leading-tight text-foreground">
           {manga.title}
         </h3>
@@ -108,7 +114,7 @@ export function MangaCard({ manga, onFindSimilar }: MangaCardProps) {
             </Badge>
           ))}
         </div>
-      </Link>
+      </div>
     </motion.div>
   );
 }
