@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { MangaDetail } from "./_components/MangaDetail";
-import { SimilarCarousel } from "./_components/SimilarCarousel";
+import { MangaDetail } from "@/app/catalogue/[id]/_components/MangaDetail";
+import { GenreCarousel } from "@/app/catalogue/[id]/_components/GenreCarousel";
 import { supabase } from "@/infrastructure/db/client";
 
 interface Props {
@@ -59,7 +59,10 @@ export default async function MangaDetailPage({ params }: Props) {
       <main className="flex-1 pt-20">
         <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
           <MangaDetail manga={manga} />
-          <SimilarCarousel mangaId={manga.id} />
+          <GenreCarousel
+            genre={manga.genres[0]}
+            excludeId={manga.id}
+          />
         </div>
       </main>
       <Footer />
