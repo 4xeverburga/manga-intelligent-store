@@ -71,7 +71,11 @@ export function CatalogueClient() {
         const json = await res.json();
 
         if (append) {
-          setMangas((prev) => [...prev, ...json.data]);
+          setMangas((prev) => {
+            const existingIds = new Set(prev.map((m) => m.id));
+            const newItems = (json.data as MangaItem[]).filter((m) => !existingIds.has(m.id));
+            return [...prev, ...newItems];
+          });
         } else {
           setMangas(json.data);
         }
