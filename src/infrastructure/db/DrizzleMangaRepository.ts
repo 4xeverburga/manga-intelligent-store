@@ -179,9 +179,22 @@ export class SupabaseMangaRepository implements IMangaRepository {
       imageUrl: row.image_url,
       score: row.score ?? 0,
       popularity: row.popularity ?? 0,
-      embedding: row.embedding ?? undefined,
+      embedding: this.parseEmbedding(row.embedding),
       createdAt: row.created_at ? new Date(row.created_at) : new Date(),
       updatedAt: row.updated_at ? new Date(row.updated_at) : new Date(),
     };
+  }
+
+  private parseEmbedding(raw: unknown): number[] | undefined {
+    if (!raw) return undefined;
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === "string") {
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return undefined;
+      }
+    }
+    return undefined;
   }
 }
