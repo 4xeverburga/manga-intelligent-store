@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ShoppingCart, User } from "lucide-react";
+import { BookOpen, ShoppingCart, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { InsightsSidebar } from "@/app/(dashboard)/app/_components/InsightsSidebar";
@@ -31,10 +31,19 @@ export function DashboardHeader() {
         </SheetContent>
       </Sheet>
 
-      <Link href="/" className="text-sm font-bold tracking-tight">
-        <span className="text-primary">Hablemos</span>{" "}
-        <span className="text-foreground">Manga</span>
-      </Link>
+      <div className="flex items-center gap-3">
+        <Link href="/" className="text-sm font-bold tracking-tight">
+          <span className="text-primary">Hablemos</span>{" "}
+          <span className="text-foreground">Manga</span>
+        </Link>
+        <Link
+          href="/catalogue"
+          className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <BookOpen className="h-3.5 w-3.5" />
+          Catálogo
+        </Link>
+      </div>
 
       {/* Mobile: right sidebar toggle */}
       <Button
