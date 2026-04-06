@@ -4,6 +4,7 @@ import {
   integer,
   text,
   real,
+  boolean,
   timestamp,
   uniqueIndex,
   index,
@@ -56,3 +57,20 @@ export const mangas = pgTable(
 
 export type SelectManga = typeof mangas.$inferSelect;
 export type InsertManga = typeof mangas.$inferInsert;
+
+export const inventory = pgTable("inventory", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  mangaId: uuid("manga_id")
+    .notNull()
+    .references(() => mangas.id, { onDelete: "cascade" })
+    .unique(),
+  stock: integer("stock").notNull().default(0),
+  canBeDropshipped: boolean("can_be_dropshipped").notNull().default(false),
+  dropshippingNotes: text("dropshipping_notes"),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export type SelectInventory = typeof inventory.$inferSelect;
+export type InsertInventory = typeof inventory.$inferInsert;
