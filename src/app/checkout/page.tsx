@@ -54,6 +54,8 @@ export default function CheckoutPage() {
   const [secondsLeft, setSecondsLeft] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const expiresAtRef = useRef<number>(0);
+  const orderIdRef = useRef<string | null>(null);
+  const statusRef = useRef<CheckoutStatus>("idle");
 
   // Load Niubiz Lightbox script
   useEffect(() => {
@@ -114,22 +116,38 @@ export default function CheckoutPage() {
   }, [orderId]);
 
   // Release reservation when leaving the page
+  // Keep refs in sync so cleanup can read latest values
   useEffect(() => {
-    const releaseOnUnload = () => {
-      if (orderId && status === "reserved") {
+    orderIdRef.current = orderId;
+  }, [orderId]);
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+
+  useEffect(() => {
+    const release = () => {
+      const id = orderIdRef.current;
+      const s = statusRef.current;
+      if (id && (s === "reserved" || s === "paying")) {
         navigator.sendBeacon(
           "/api/checkout/release",
           new Blob(
-            [JSON.stringify({ orderId })],
+            [JSON.stringify({ orderId: id })],
             { type: "application/json" }
           )
         );
       }
     };
 
-    window.addEventListener("beforeunload", releaseOnUnload);
-    return () => window.removeEventListener("beforeunload", releaseOnUnload);
-  }, [orderId, status]);
+    // Hard refresh / tab close
+    window.addEventListener("beforeunload", release);
+
+    // SPA navigation (component unmount)
+    return () => {
+      window.removeEventListener("beforeunload", release);
+      release();
+    };
+  }, []);
 
   // Step 1: Reserve stock
   const handleReserve = useCallback(async () => {
