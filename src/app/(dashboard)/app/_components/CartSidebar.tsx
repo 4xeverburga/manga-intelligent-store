@@ -67,7 +67,7 @@ function CartItemRow({
               }`}
             >
               {stockInfo.canBeDropshipped && item.quantity > stockInfo.stock
-                ? `${Math.min(item.quantity, stockInfo.stock)} de stock · ${item.quantity - Math.min(item.quantity, stockInfo.stock)} por encargo`
+                ? `${stockInfo.stock} en stock · ${item.quantity - stockInfo.stock} bajo pedido`
                 : `${stockInfo.stock} en stock${stockInfo.canBeDropshipped ? " · Bajo pedido" : ""}`
               }
             </span>
@@ -88,7 +88,13 @@ function CartItemRow({
             variant="ghost"
             size="icon-xs"
             onClick={() => updateQuantity(item.volumeId, item.quantity + 1)}
-            disabled={stockInfo && !stockInfo.canBeDropshipped && item.quantity >= stockInfo.stock}
+            disabled={
+              stockInfo
+                ? stockInfo.canBeDropshipped
+                  ? item.quantity >= stockInfo.stock + 3
+                  : item.quantity >= stockInfo.stock
+                : false
+            }
           >
             <Plus className="size-3" />
           </Button>

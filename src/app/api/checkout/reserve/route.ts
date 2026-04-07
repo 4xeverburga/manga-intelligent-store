@@ -75,6 +75,18 @@ export async function POST(req: Request) {
         { status: 409 }
       );
     }
+    if (
+      error instanceof Error &&
+      error.message.includes("DROPSHIP_LIMIT_EXCEEDED")
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Solo se pueden pedir hasta 3 unidades bajo pedido por volumen. Reduce la cantidad e intenta de nuevo.",
+        },
+        { status: 409 }
+      );
+    }
     console.error("Reserve error:", error);
     return NextResponse.json(
       { error: "Failed to reserve stock" },

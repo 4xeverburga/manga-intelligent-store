@@ -53,7 +53,10 @@ BEGIN
         WHERE volume_id = (v_item->>'volume_id')::uuid
           AND can_be_dropshipped = true
       ) THEN
-        -- Dropshippable: take whatever is available
+        -- Dropshippable: max 3 units can be ordered beyond stock
+        IF (v_requested - v_available) > 3 THEN
+          RAISE EXCEPTION 'DROPSHIP_LIMIT_EXCEEDED::%::%::%', v_item->>'volume_id', v_available, v_requested;
+        END IF;
         v_to_decrement := v_available;
       ELSE
         RAISE EXCEPTION 'INSUFFICIENT_STOCK::%', v_item->>'volume_id';

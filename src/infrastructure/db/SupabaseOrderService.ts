@@ -89,9 +89,13 @@ export class SupabaseOrderService implements IOrderService {
     if (error) {
       if (
         error.message.includes("stock_non_negative") ||
-        error.message.includes("Insufficient stock")
+        error.message.includes("Insufficient stock") ||
+        error.message.includes("INSUFFICIENT_STOCK")
       ) {
         throw new Error("INSUFFICIENT_STOCK");
+      }
+      if (error.message.includes("DROPSHIP_LIMIT_EXCEEDED")) {
+        throw new Error(error.message);
       }
       throw new Error(`Reservation failed: ${error.message}`);
     }
