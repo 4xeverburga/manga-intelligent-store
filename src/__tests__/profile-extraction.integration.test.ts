@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { MALAdapter } from "@/infrastructure/social/MALAdapter";
-import { RedditAdapter } from "@/infrastructure/social/RedditAdapter";
+import { ProfileServiceAdapter } from "@/infrastructure/social/ProfileServiceAdapter";
 import type { UserInsight } from "@/core/domain/entities/UserInsight";
 
 const malUsername = process.env.TEST_MAL_USERNAME || "4verburga";
@@ -59,41 +58,54 @@ function buildSystemPromptSection(profiles: UserInsight[]): string {
 }
 
 describe("Profile extraction — what Gemini actually sees", () => {
-  it(`MAL: fetch profile for "${malUsername}"`, async () => {
-    const adapter = new MALAdapter();
-    const profile = await adapter.fetchProfile(malUsername);
+  let malProfile: UserInsight;
+  let redditProfile: UserInsight;
 
-    expect(profile.username).toBe(malUsername);
-    expect(profile.platform).toBe("mal");
+  it("Step 1: fetch raw profiles from MAL + Reddit APIs", async () => {
+    const service = new ProfileServiceAdapter();
+
+    const [mal, reddit] = await Promise.all([
+      service.fetchProfile(malUsername, "mal"),
+      service.fetchProfile(redditUsername, "reddit"),
+    ]);
+    malProfile = mal;
+    redditProfile = reddit;
+
+    expect(malProfile.username).toBe(malUsername);
+    expect(redditProfile.username).toBe(redditUsername);
 
     console.log("\n" + "=".repeat(60));
     console.log("MAL — Raw UserInsight");
     console.log("=".repeat(60));
-    console.log(JSON.stringify(profile, null, 2));
-  });
-
-  it(`Reddit: fetch profile for "${redditUsername}"`, async () => {
-    const adapter = new RedditAdapter();
-    const profile = await adapter.fetchProfile(redditUsername);
-
-    expect(profile.username).toBe(redditUsername);
-    expect(profile.platform).toBe("reddit");
+    console.log(JSON.stringify(malProfile, null, 2));
 
     console.log("\n" + "=".repeat(60));
     console.log("Reddit — Raw UserInsight");
     console.log("=".repeat(60));
-    console.log(JSON.stringify(profile, null, 2));
+    console.log(JSON.stringify(redditProfile, null, 2));
   });
 
-  it("Combined: build the exact system prompt section Gemini receives", async () => {
-    const mal = new MALAdapter();
-    const reddit = new RedditAdapter();
+  it("Step 2: AI-generated interest tags (what the sidebar badges show)", async () => {
+    const service = new ProfileServiceAdapter();
 
-    const [malProfile, redditProfile] = await Promise.all([
-      mal.fetchProfile(malUsername),
-      reddit.fetchProfile(redditUsername),
+    const [malTags, redditTags] = await Promise.all([
+      service.extractInterestTags(malProfile),
+      service.extractInterestTags(redditProfile),
     ]);
+    malProfile.interestTags = malTags;
+    redditProfile.interestTags = redditTags;
 
+    console.log("\n" + "=".repeat(60));
+    console.log("AI-GENERATED TAGS (shown as badges in sidebar)");
+    console.log("=".repeat(60));
+    console.log(`MAL (${malUsername}):`, malTags);
+    console.log(`Reddit (${redditUsername}):`, redditTags);
+
+    expect(malTags).toBeInstanceOf(Array);
+    expect(redditTags).toBeInstanceOf(Array);
+  }, 60_000);
+
+  it("Step 3: final system prompt section Gemini receives", async () => {
     const promptSection = buildSystemPromptSection([
       malProfile,
       redditProfile,
