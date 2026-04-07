@@ -57,10 +57,12 @@ function buildSystemPromptSection(profiles: UserInsight[]): string {
 
   let result = `## Perfil del usuario\n${platformSections.join("\n\n")}`;
 
+  result += `\n\n### Resumen general`;
   if (tags || genres) {
-    result += `\n\n### Resumen general`;
     if (tags) result += `\n- Intereses IA: ${tags}`;
     if (genres) result += `\n- Géneros favoritos: ${genres}`;
+  } else {
+    result += `\n- No se pudo extraer preferencias en base a los datos de los perfiles. Basa tus recomendaciones en lo que el usuario te pida durante la conversación.`;
   }
 
   return result;

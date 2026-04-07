@@ -51,10 +51,12 @@ export async function POST(req: Request) {
 
     system += `\n\n## Perfil del usuario\n${platformSections.join("\n\n")}`;
 
+    system += `\n\n### Resumen general`;
     if (tags || genres) {
-      system += `\n\n### Resumen general`;
       if (tags) system += `\n- Intereses IA: ${tags}`;
       if (genres) system += `\n- Géneros favoritos: ${genres}`;
+    } else {
+      system += `\n- No se pudo extraer preferencias en base a los datos de los perfiles. Basa tus recomendaciones en lo que el usuario te pida durante la conversación.`;
     }
 
     system += `\n\nIMPORTANTE: Ya tienes los datos del usuario. NO le preguntes qué géneros le gustan ni cuál es su manga favorito — ya lo sabes por sus perfiles. Usa esta información directamente para personalizar recomendaciones. Cuando el usuario pregunte qué sabes de su perfil, responde con datos CONCRETOS: títulos específicos, subreddits, animes, etc. Si un campo dice "No disponible", no lo menciones.`;
