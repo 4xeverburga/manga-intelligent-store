@@ -261,7 +261,9 @@ function CheckoutContent() {
         purchasenumber: purchaseNumber,
         amount: Number(amount).toFixed(2),
         cardholderemail: email || "customer@hablemosmanga.com",
-        expirationminutes: 5,
+        expirationminutes: Math.ceil(
+          (Number(process.env.NEXT_PUBLIC_RESERVATION_TTL_SECONDS) || 300) / 60
+        ),
         timeouturl: `${window.location.origin}/checkout?status=timeout`,
         merchantlogo: `${window.location.origin}/logo.png`,
         formbuttoncolor: "#dc2626",

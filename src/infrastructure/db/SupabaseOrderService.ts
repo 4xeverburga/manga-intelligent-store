@@ -49,7 +49,7 @@ export class SupabaseOrderService implements IOrderService {
 
   async reserveStock(
     items: Pick<OrderItem, "volumeId" | "title" | "quantity">[],
-    ttlSeconds = 180
+    ttlSeconds = Number(process.env.NEXT_PUBLIC_RESERVATION_TTL_SECONDS) || 300
   ): Promise<ReservationResult> {
     // Look up authoritative prices from DB — never trust client
     const volumeIds = items.map((i) => i.volumeId);

@@ -14,10 +14,10 @@ export async function POST(req: Request) {
   const { messages: uiMessages, profileContext } = await req.json();
   const allMessages = await convertToModelMessages(uiMessages);
 
-  // Keep only the last 30 model messages to stay within context limits
-  // (each user turn produces 1+ messages; assistant responses may have tool steps)
-  const messages = allMessages.length > 30
-    ? allMessages.slice(-30)
+  // Keep only the last N model messages to stay within context limits
+  const maxCtx = Number(process.env.CHAT_MAX_CONTEXT_MESSAGES) || 30;
+  const messages = allMessages.length > maxCtx
+    ? allMessages.slice(-maxCtx)
     : allMessages;
 
   let system = SYSTEM_PROMPT;

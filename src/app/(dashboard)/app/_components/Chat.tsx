@@ -10,7 +10,7 @@ import { ONBOARDING_MESSAGE, ONBOARDING_MESSAGE_WITH_PROFILE } from "@/infrastru
 import { useProfileStore } from "@/stores/profile";
 
 const STORAGE_KEY = "hablemos-manga-chat";
-const MAX_USER_TURNS = 20;
+const MAX_USER_TURNS = Number(process.env.NEXT_PUBLIC_CHAT_MAX_TURNS) || 20;
 
 /** Wrapper that waits for Zustand hydration before mounting the chat */
 export function Chat() {
