@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { useChat, type UIMessage } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { Button } from "@/components/ui/button";
-import { SendHorizontal, Square, RotateCcw } from "lucide-react";
+import { SendHorizontal, RotateCcw } from "lucide-react";
 import { ChatMessage } from "@/app/(dashboard)/app/_components/ChatMessage";
 import { ONBOARDING_MESSAGE, ONBOARDING_MESSAGE_WITH_PROFILE } from "@/infrastructure/ai/prompts";
 import { useProfileStore } from "@/stores/profile";
@@ -93,7 +93,7 @@ function ChatInner() {
     []
   );
 
-  const { messages, sendMessage, status, stop, setMessages } = useChat({
+  const { messages, sendMessage, status, setMessages } = useChat({
     transport,
     messages: initialMessages,
   });
@@ -164,10 +164,6 @@ function ChatInner() {
               <p className="text-sm text-muted-foreground">
                 Has alcanzado el límite de {MAX_USER_TURNS} mensajes. Inicia una nueva conversación para continuar.
               </p>
-              <Button variant="outline" size="sm" onClick={handleRestart}>
-                <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                Nueva conversación
-              </Button>
             </div>
           )}
         </div>
@@ -200,37 +196,20 @@ function ChatInner() {
                   target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
                 }}
               />
-              {isStreaming ? (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={stop}
-                  className="shrink-0"
-                >
-                  <Square className="h-4 w-4" />
-                </Button>
-              ) : (
-                <Button
-                  size="icon"
-                  onClick={handleSend}
-                  disabled={!input.trim()}
-                  className="shrink-0 bg-primary"
-                >
-                  <SendHorizontal className="h-4 w-4" />
-                </Button>
-              )}
+              <Button
+                size="icon"
+                onClick={handleSend}
+                disabled={!input.trim() || isStreaming}
+                className="shrink-0 bg-primary"
+              >
+                <SendHorizontal className="h-4 w-4" />
+              </Button>
             </>
           )}
         </div>
         {!limitReached && userTurns > 0 && (
-          <div className="mx-auto mt-1.5 flex max-w-2xl items-center justify-between text-[10px] text-muted-foreground">
+          <div className="mx-auto mt-1.5 flex max-w-2xl text-[10px] text-muted-foreground">
             <span>{userTurns}/{MAX_USER_TURNS} mensajes</span>
-            <button
-              onClick={handleRestart}
-              className="underline-offset-2 hover:underline"
-            >
-              Reiniciar chat
-            </button>
           </div>
         )}
       </div>
