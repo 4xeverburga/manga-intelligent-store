@@ -21,10 +21,11 @@ export interface IOrderService {
 
   /**
    * Atomically decrement stock and create a pending order with TTL.
+   * Prices are looked up server-side from the DB — never trust client prices.
    * Throws "INSUFFICIENT_STOCK" if any item would go below 0.
    */
   reserveStock(
-    items: OrderItem[],
+    items: Pick<OrderItem, "volumeId" | "title" | "quantity">[],
     ttlSeconds?: number
   ): Promise<ReservationResult>;
 

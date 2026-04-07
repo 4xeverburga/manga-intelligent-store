@@ -224,18 +224,18 @@ function CheckoutContent() {
         }),
       });
 
-      const amount = totalPrice;
       const purchaseNumber = `ORD-${Date.now()}`;
 
       const res = await fetch("/api/checkout/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount, orderId: purchaseNumber }),
+        body: JSON.stringify({ orderId, purchaseNumber }),
       });
 
       if (!res.ok) throw new Error("Failed to create session");
 
-      const { sessionToken, merchantId } = await res.json();
+      // Amount comes from server (DB order total), not client store
+      const { sessionToken, merchantId, amount } = await res.json();
 
       if (!window.VisanetCheckout) {
         throw new Error("Payment script not loaded");
@@ -246,7 +246,7 @@ function CheckoutContent() {
         channel: "web",
         merchantid: merchantId,
         purchasenumber: purchaseNumber,
-        amount: amount.toFixed(2),
+        amount: Number(amount).toFixed(2),
         cardholderemail: email || "customer@hablemosmanga.com",
         expirationminutes: 5,
         timeouturl: `${window.location.origin}/checkout?status=timeout`,

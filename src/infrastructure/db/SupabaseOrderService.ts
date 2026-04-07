@@ -48,19 +48,36 @@ export class SupabaseOrderService implements IOrderService {
   }
 
   async reserveStock(
-    items: OrderItem[],
+    items: Pick<OrderItem, "volumeId" | "title" | "quantity">[],
     ttlSeconds = 180
   ): Promise<ReservationResult> {
-    const totalAmount = items.reduce(
+    // Look up authoritative prices from DB — never trust client
+    const volumeIds = items.map((i) => i.volumeId);
+    const { data: priceRows } = await supabase
+      .from("manga_volumes")
+      .select("id, price")
+      .in("id", volumeIds);
+
+    const priceMap = new Map(
+      (priceRows ?? []).map((r) => [r.id as string, r.price as number])
+    );
+
+    const pricedItems = items.map((i) => {
+      const price = priceMap.get(i.volumeId);
+      if (price == null) throw new Error(`Volume ${i.volumeId} not found`);
+      return { ...i, unitPrice: price };
+    });
+
+    const totalAmount = pricedItems.reduce(
       (acc, i) => acc + i.quantity * i.unitPrice,
       0
     );
-    const itemCount = items.reduce((acc, i) => acc + i.quantity, 0);
+    const itemCount = pricedItems.reduce((acc, i) => acc + i.quantity, 0);
 
     const { data, error } = await supabase.rpc("reserve_stock", {
       p_total_amount: totalAmount,
       p_item_count: itemCount,
-      p_items: items.map((i) => ({
+      p_items: pricedItems.map((i) => ({
         volume_id: i.volumeId,
         title: i.title,
         quantity: i.quantity,

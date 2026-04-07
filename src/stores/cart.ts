@@ -7,6 +7,7 @@ interface CartState {
   addItem: (item: CartItem) => void;
   removeItem: (volumeId: string, requestedBy?: "user" | "ai") => void;
   updateQuantity: (volumeId: string, quantity: number, requestedBy?: "user" | "ai") => void;
+  updatePrice: (volumeId: string, price: number) => void;
   approveItem: (volumeId: string) => void;
   clearAISuggestions: () => void;
   clear: () => void;
@@ -42,6 +43,13 @@ export const useCartStore = create<CartState>()(
             if (requestedBy === "ai" && i.source === "manual") return i;
             return { ...i, quantity: Math.max(1, quantity) };
           }),
+        })),
+
+      updatePrice: (volumeId, price) =>
+        set((state) => ({
+          items: state.items.map((i) =>
+            i.volumeId === volumeId && i.price !== price ? { ...i, price } : i
+          ),
         })),
 
       approveItem: (volumeId) =>

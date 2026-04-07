@@ -16,7 +16,7 @@ import {
 import { useShallow } from "zustand/react/shallow";
 import type { CartItem } from "@/core/domain/entities";
 
-type StockMap = Record<string, { stock: number; canBeDropshipped: boolean }>;
+type StockMap = Record<string, { stock: number; canBeDropshipped: boolean; price: number }>;
 
 interface InsufficientItem {
   volumeId: string;
@@ -66,8 +66,10 @@ function CartItemRow({
                   : "text-muted-foreground"
               }`}
             >
-              {stockInfo.stock} en stock
-              {stockInfo.canBeDropshipped && " · Bajo pedido"}
+              {stockInfo.canBeDropshipped && item.quantity > stockInfo.stock
+                ? `${Math.min(item.quantity, stockInfo.stock)} de stock · ${item.quantity - Math.min(item.quantity, stockInfo.stock)} por encargo`
+                : `${stockInfo.stock} en stock${stockInfo.canBeDropshipped ? " · Bajo pedido" : ""}`
+              }
             </span>
           </div>
         )}
@@ -86,6 +88,7 @@ function CartItemRow({
             variant="ghost"
             size="icon-xs"
             onClick={() => updateQuantity(item.volumeId, item.quantity + 1)}
+            disabled={stockInfo && !stockInfo.canBeDropshipped && item.quantity >= stockInfo.stock}
           >
             <Plus className="size-3" />
           </Button>
@@ -136,14 +139,26 @@ export function CartSidebar() {
   const [error, setError] = useState("");
   const [insufficientItems, setInsufficientItems] = useState<InsufficientItem[]>([]);
 
+  const updatePrice = useCartStore((s) => s.updatePrice);
+
   const fetchStock = useCallback(async (items: CartItem[]) => {
     if (items.length === 0) return;
     const ids = items.map((i) => i.volumeId).join(",");
     try {
       const res = await fetch(`/api/mangas/stock?ids=${ids}`);
-      if (res.ok) setStockMap(await res.json());
+      if (res.ok) {
+        const data: StockMap = await res.json();
+        setStockMap(data);
+        // Hydrate stale prices from DB
+        for (const item of items) {
+          const info = data[item.volumeId];
+          if (info && info.price > 0 && info.price !== item.price) {
+            updatePrice(item.volumeId, info.price);
+          }
+        }
+      }
     } catch { /* ignore */ }
-  }, []);
+  }, [updatePrice]);
 
   // Only re-fetch stock when the set of volume IDs changes, not on quantity updates
   const volumeIdKey = allItems.map((i) => i.volumeId).sort().join(",");
@@ -167,7 +182,6 @@ export function CartSidebar() {
             volumeId: i.volumeId,
             title: i.title,
             quantity: i.quantity,
-            unitPrice: i.price,
           })),
         }),
       });

@@ -17,15 +17,17 @@ export async function GET(req: NextRequest) {
 
   const { data: rows } = await supabase
     .from("inventory")
-    .select("volume_id, stock, can_be_dropshipped")
+    .select("volume_id, stock, can_be_dropshipped, manga_volumes!inner(price)")
     .in("volume_id", volumeIds);
 
-  const stock: Record<string, { stock: number; canBeDropshipped: boolean }> =
+  const stock: Record<string, { stock: number; canBeDropshipped: boolean; price: number }> =
     {};
   for (const r of rows ?? []) {
+    const mv = Array.isArray(r.manga_volumes) ? r.manga_volumes[0] : r.manga_volumes;
     stock[r.volume_id as string] = {
       stock: r.stock as number,
       canBeDropshipped: r.can_be_dropshipped as boolean,
+      price: (mv?.price as number) ?? 0,
     };
   }
 

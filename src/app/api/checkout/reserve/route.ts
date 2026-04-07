@@ -7,7 +7,6 @@ interface CartItemPayload {
   volumeId: string;
   title: string;
   quantity: number;
-  unitPrice: number;
 }
 
 export async function POST(req: Request) {
@@ -45,7 +44,6 @@ export async function POST(req: Request) {
         volumeId: i.volumeId,
         title: i.title,
         quantity: i.quantity,
-        unitPrice: i.unitPrice ?? 1.0,
       }))
     );
 
