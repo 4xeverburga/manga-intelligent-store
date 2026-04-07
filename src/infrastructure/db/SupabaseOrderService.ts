@@ -109,4 +109,25 @@ export class SupabaseOrderService implements IOrderService {
       throw new Error(`Release failed: ${error.message}`);
     }
   }
+
+  async updateDeliveryInfo(
+    orderId: string,
+    info: { email?: string; phone?: string; deliveryAddress?: string }
+  ): Promise<void> {
+    const update: Record<string, string> = {};
+    if (info.email) update.email = info.email;
+    if (info.phone) update.phone = info.phone;
+    if (info.deliveryAddress) update.delivery_address = info.deliveryAddress;
+
+    if (Object.keys(update).length === 0) return;
+
+    const { error } = await supabase
+      .from("orders")
+      .update(update)
+      .eq("id", orderId);
+
+    if (error) {
+      throw new Error(`Update delivery info failed: ${error.message}`);
+    }
+  }
 }

@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Trash2, ShoppingCart, Plus, Minus, Check, X } from "lucide-react";
+import { Trash2, ShoppingCart, Plus, Minus, Check, X, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -15,12 +16,16 @@ import {
 import { useShallow } from "zustand/react/shallow";
 import type { CartItem } from "@/core/domain/entities";
 
+type StockMap = Record<string, { stock: number; canBeDropshipped: boolean }>;
+
 function CartItemRow({
   item,
   showApprove,
+  stockInfo,
 }: {
   item: CartItem;
   showApprove?: boolean;
+  stockInfo?: { stock: number; canBeDropshipped: boolean };
 }) {
   const removeItem = useCartStore((s) => s.removeItem);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
@@ -44,6 +49,22 @@ function CartItemRow({
             S/ {(item.quantity * 1.0).toFixed(2)}
           </span>
         </div>
+        {stockInfo && (
+          <div className="mt-0.5 flex items-center gap-1">
+            <Package className="size-3 text-muted-foreground" />
+            <span
+              className={`text-[10px] ${
+                stockInfo.stock < item.quantity
+                  ? "text-destructive"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {stockInfo.canBeDropshipped
+                ? "Bajo pedido"
+                : `${stockInfo.stock} en stock`}
+            </span>
+          </div>
+        )}
         {/* Quantity controls */}
         <div className="mt-1 flex items-center gap-1">
           <Button
@@ -93,6 +114,7 @@ function CartItemRow({
 export function CartSidebar() {
   const totalItems = useCartStore(selectTotalItems);
   const totalPrice = useCartStore(selectTotalPrice);
+  const allItems = useCartStore(useShallow((s) => s.items));
   const manualItems = useCartStore(
     useShallow((s) => s.items.filter((i) => i.source === "manual"))
   );
@@ -101,6 +123,21 @@ export function CartSidebar() {
   );
   const clearAISuggestions = useCartStore((s) => s.clearAISuggestions);
   const isEmpty = totalItems === 0;
+
+  const [stockMap, setStockMap] = useState<StockMap>({});
+
+  const fetchStock = useCallback(async (items: CartItem[]) => {
+    if (items.length === 0) return;
+    const ids = items.map((i) => i.volumeId).join(",");
+    try {
+      const res = await fetch(`/api/mangas/stock?ids=${ids}`);
+      if (res.ok) setStockMap(await res.json());
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    fetchStock(allItems);
+  }, [allItems, fetchStock]);
 
   return (
     <div className="flex h-full flex-col">
@@ -135,7 +172,7 @@ export function CartSidebar() {
                   </span>
                 </div>
                 {manualItems.map((item) => (
-                  <CartItemRow key={item.volumeId} item={item} />
+                  <CartItemRow key={item.volumeId} item={item} stockInfo={stockMap[item.volumeId]} />
                 ))}
               </div>
             )}
@@ -158,7 +195,7 @@ export function CartSidebar() {
                   </button>
                 </div>
                 {aiItems.map((item) => (
-                  <CartItemRow key={item.volumeId} item={item} showApprove />
+                  <CartItemRow key={item.volumeId} item={item} showApprove stockInfo={stockMap[item.volumeId]} />
                 ))}
               </div>
             )}
@@ -177,7 +214,7 @@ export function CartSidebar() {
           <Separator className="my-3" />
           <Link href="/checkout">
             <Button className="w-full bg-cta text-cta-foreground hover:bg-cta/90">
-              Pagar con Niubiz
+              Ir al Checkout
             </Button>
           </Link>
         </div>

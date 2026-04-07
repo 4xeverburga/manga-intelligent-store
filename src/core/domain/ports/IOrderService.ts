@@ -39,4 +39,10 @@ export interface IOrderService {
    * No-op if the order is already completed or expired.
    */
   releaseReservation(orderId: string): Promise<void>;
+
+  /** Update delivery contact info on an existing order. */
+  updateDeliveryInfo(
+    orderId: string,
+    info: { email?: string; phone?: string; deliveryAddress?: string }
+  ): Promise<void>;
 }

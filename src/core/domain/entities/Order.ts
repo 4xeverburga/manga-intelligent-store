@@ -12,6 +12,9 @@ export interface Order {
   totalAmount: number;
   itemCount: number;
   items: OrderItem[];
+  email: string | null;
+  phone: string | null;
+  deliveryAddress: string | null;
   expiresAt: Date | null;
   createdAt: Date;
 }

@@ -10,6 +10,8 @@ import {
   XCircle,
   Loader2,
   Clock,
+  Package,
+  Truck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +31,16 @@ type CheckoutStatus =
   | "success"
   | "error";
 
+type StockMap = Record<string, { stock: number; canBeDropshipped: boolean }>;
+
+interface InsufficientItem {
+  volumeId: string;
+  title: string;
+  requested: number;
+  available: number;
+  canBeDropshipped: boolean;
+}
+
 declare global {
   interface Window {
     VisanetCheckout?: {
@@ -46,8 +58,17 @@ export default function CheckoutPage() {
 
   const [status, setStatus] = useState<CheckoutStatus>("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [insufficientItems, setInsufficientItems] = useState<InsufficientItem[]>([]);
   const [txnId, setTxnId] = useState("");
   const [scriptLoaded, setScriptLoaded] = useState(false);
+
+  // Delivery form state
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+
+  // Stock info
+  const [stockMap, setStockMap] = useState<StockMap>({});
 
   // Reservation state
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -71,6 +92,16 @@ export default function CheckoutPage() {
     script.onload = () => setScriptLoaded(true);
     document.body.appendChild(script);
   }, []);
+
+  // Fetch stock for cart items
+  useEffect(() => {
+    if (items.length === 0) return;
+    const ids = items.map((i) => i.volumeId).join(",");
+    fetch(`/api/mangas/stock?ids=${ids}`)
+      .then((r) => (r.ok ? r.json() : {}))
+      .then(setStockMap)
+      .catch(() => {});
+  }, [items]);
 
   // Countdown timer
   useEffect(() => {
@@ -152,8 +183,14 @@ export default function CheckoutPage() {
   // Step 1: Reserve stock
   const handleReserve = useCallback(async () => {
     if (items.length === 0) return;
+    if (!email.trim() || !phone.trim() || !deliveryAddress.trim()) {
+      setErrorMsg("Completa todos los datos de envío antes de continuar.");
+      setStatus("error");
+      return;
+    }
     setStatus("reserving");
     setErrorMsg("");
+    setInsufficientItems([]);
 
     try {
       const res = await fetch("/api/checkout/reserve", {
@@ -166,11 +203,23 @@ export default function CheckoutPage() {
             quantity: i.quantity,
             unitPrice: i.price,
           })),
+          email: email.trim(),
+          phone: phone.trim(),
+          deliveryAddress: deliveryAddress.trim(),
         }),
       });
 
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}));
+        if (errBody.insufficient?.length > 0) {
+          setInsufficientItems(errBody.insufficient);
+          // Refresh stock map
+          const ids = items.map((i) => i.volumeId).join(",");
+          fetch(`/api/mangas/stock?ids=${ids}`)
+            .then((r) => (r.ok ? r.json() : {}))
+            .then(setStockMap)
+            .catch(() => {});
+        }
         throw new Error(
           errBody.error || "No se pudo reservar el stock"
         );
@@ -189,7 +238,7 @@ export default function CheckoutPage() {
         err instanceof Error ? err.message : "Error al reservar el stock"
       );
     }
-  }, [items]);
+  }, [items, email, phone, deliveryAddress]);
 
   // Step 2: Open Niubiz Lightbox (only after reservation)
   const handlePay = useCallback(async () => {
@@ -220,7 +269,7 @@ export default function CheckoutPage() {
         merchantid: merchantId,
         purchasenumber: purchaseNumber,
         amount: amount.toFixed(2),
-        cardholderemail: "customer@hablemosmanga.com",
+        cardholderemail: email || "customer@hablemosmanga.com",
         expirationminutes: 5,
         timeouturl: `${window.location.origin}/checkout?status=timeout`,
         merchantlogo: `${window.location.origin}/logo.png`,
@@ -284,6 +333,7 @@ export default function CheckoutPage() {
   const resetToIdle = () => {
     setStatus("idle");
     setErrorMsg("");
+    setInsufficientItems([]);
     setOrderId(null);
     setSecondsLeft(0);
   };
@@ -328,8 +378,35 @@ export default function CheckoutPage() {
       <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-4">
         <div className="flex flex-col items-center gap-4 text-center">
           <XCircle className="h-16 w-16 text-destructive" />
-          <h1 className="text-2xl font-bold">Error en el pago</h1>
+          <h1 className="text-2xl font-bold">Error en el pedido</h1>
           <p className="max-w-sm text-muted-foreground">{errorMsg}</p>
+
+          {insufficientItems.length > 0 && (
+            <div className="w-full max-w-md rounded-lg border border-border/40 bg-card p-4 text-left">
+              <p className="mb-2 text-sm font-medium">
+                Detalle de stock insuficiente:
+              </p>
+              <div className="space-y-2">
+                {insufficientItems.map((item) => (
+                  <div
+                    key={item.volumeId}
+                    className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-sm"
+                  >
+                    <span className="font-medium">{item.title}</span>
+                    <div className="flex gap-3 text-xs">
+                      <span className="text-muted-foreground">
+                        Pedido: {item.requested}
+                      </span>
+                      <span className="text-destructive">
+                        Disponible: {item.available}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-3">
             <Button variant="outline" onClick={resetToIdle}>
               Reintentar
@@ -375,35 +452,54 @@ export default function CheckoutPage() {
         <div className="rounded-lg border border-border/40 bg-card p-6">
           <h2 className="mb-4 text-lg font-semibold">Resumen del pedido</h2>
           <div className="space-y-3">
-            {items.map((item) => (
-              <div key={item.volumeId} className="flex items-center gap-3">
-                {item.imageUrl && (
-                  <Image
-                    src={item.imageUrl}
-                    alt={item.title}
-                    width={40}
-                    height={56}
-                    className="h-14 w-10 rounded object-cover"
-                  />
-                )}
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{item.title}</p>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">
-                      x{item.quantity}
-                    </span>
-                    {item.source === "ai-suggested" && (
-                      <Badge variant="secondary" className="text-[10px]">
-                        IA
-                      </Badge>
+            {items.map((item) => {
+              const info = stockMap[item.volumeId];
+              return (
+                <div key={item.volumeId} className="flex items-center gap-3">
+                  {item.imageUrl && (
+                    <Image
+                      src={item.imageUrl}
+                      alt={item.title}
+                      width={40}
+                      height={56}
+                      className="h-14 w-10 rounded object-cover"
+                    />
+                  )}
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{item.title}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        x{item.quantity}
+                      </span>
+                      {item.source === "ai-suggested" && (
+                        <Badge variant="secondary" className="text-[10px]">
+                          IA
+                        </Badge>
+                      )}
+                    </div>
+                    {info && (
+                      <div className="mt-0.5 flex items-center gap-1">
+                        <Package className="size-3 text-muted-foreground" />
+                        <span
+                          className={`text-[10px] ${
+                            info.stock < item.quantity
+                              ? "text-destructive"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          {info.canBeDropshipped
+                            ? "Bajo pedido"
+                            : `${info.stock} en stock`}
+                        </span>
+                      </div>
                     )}
                   </div>
+                  <span className="text-sm font-medium">
+                    S/ {(item.quantity * 1.0).toFixed(2)}
+                  </span>
                 </div>
-                <span className="text-sm font-medium">
-                  S/ {(item.quantity * 1.0).toFixed(2)}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <Separator className="my-4" />
           <div className="flex items-center justify-between">
@@ -414,80 +510,154 @@ export default function CheckoutPage() {
               S/ {totalPrice.toFixed(2)}
             </span>
           </div>
+
+          {/* Expected delivery time */}
+          <div className="mt-4 flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2">
+            <Truck className="h-4 w-4 text-primary" />
+            <div className="text-sm">
+              <p className="font-medium">Tiempo estimado de entrega</p>
+              <p className="text-xs text-muted-foreground">
+                {items.some((i) => stockMap[i.volumeId]?.canBeDropshipped)
+                  ? "7–15 días hábiles (incluye artículos bajo pedido)"
+                  : "3–5 días hábiles"}
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* Payment */}
-        <div className="flex flex-col items-center justify-center rounded-lg border border-border/40 bg-card p-6">
-          {/* Timer badge — visible when reservation is active */}
-          {(status === "reserved" || status === "paying") && (
-            <div
-              className={`mb-4 flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ${
-                secondsLeft <= 30
-                  ? "bg-destructive/10 text-destructive"
-                  : "bg-primary/10 text-primary"
-              }`}
-            >
-              <Clock className="h-4 w-4" />
-              <span>Reserva expira en {formatTime(secondsLeft)}</span>
+        {/* Delivery form + Payment */}
+        <div className="flex flex-col gap-6">
+          {/* Delivery info form */}
+          <div className="rounded-lg border border-border/40 bg-card p-6">
+            <h2 className="mb-4 text-lg font-semibold">Datos de envío</h2>
+            <div className="space-y-3">
+              <div>
+                <label
+                  htmlFor="email"
+                  className="mb-1 block text-xs font-medium text-muted-foreground"
+                >
+                  Correo electrónico
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="tu@email.com"
+                  disabled={status !== "idle"}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-60"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="phone"
+                  className="mb-1 block text-xs font-medium text-muted-foreground"
+                >
+                  Teléfono
+                </label>
+                <input
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+51 999 999 999"
+                  disabled={status !== "idle"}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-60"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="address"
+                  className="mb-1 block text-xs font-medium text-muted-foreground"
+                >
+                  Dirección de entrega
+                </label>
+                <textarea
+                  id="address"
+                  value={deliveryAddress}
+                  onChange={(e) => setDeliveryAddress(e.target.value)}
+                  placeholder="Av. Ejemplo 123, Distrito, Ciudad"
+                  rows={2}
+                  disabled={status !== "idle"}
+                  className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-60"
+                />
+              </div>
             </div>
-          )}
+          </div>
 
-          <ShoppingBag className="mb-4 h-12 w-12 text-muted-foreground/30" />
-          <p className="mb-6 text-center text-sm text-muted-foreground">
-            {status === "reserved" || status === "paying"
-              ? "Stock reservado. Completa el pago antes de que expire."
-              : "Pago simbólico procesado por Niubiz Sandbox"}
-          </p>
+          {/* Payment section */}
+          <div className="flex flex-col items-center justify-center rounded-lg border border-border/40 bg-card p-6">
+            {/* Timer badge — visible when reservation is active */}
+            {(status === "reserved" || status === "paying") && (
+              <div
+                className={`mb-4 flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ${
+                  secondsLeft <= 30
+                    ? "bg-destructive/10 text-destructive"
+                    : "bg-primary/10 text-primary"
+                }`}
+              >
+                <Clock className="h-4 w-4" />
+                <span>Reserva expira en {formatTime(secondsLeft)}</span>
+              </div>
+            )}
 
-          {/* Step 1: Reserve stock */}
-          {status === "idle" && (
-            <Button
-              onClick={handleReserve}
-              disabled={!scriptLoaded}
-              className="w-full max-w-xs bg-cta text-cta-foreground hover:bg-cta/90"
-              size="lg"
-            >
-              Reservar y Pagar S/ {totalPrice.toFixed(2)}
-            </Button>
-          )}
+            <ShoppingBag className="mb-4 h-12 w-12 text-muted-foreground/30" />
+            <p className="mb-6 text-center text-sm text-muted-foreground">
+              {status === "reserved" || status === "paying"
+                ? "Stock reservado. Completa el pago antes de que expire."
+                : "Pago simbólico procesado por Niubiz Sandbox"}
+            </p>
 
-          {status === "reserving" && (
-            <Button
-              disabled
-              className="w-full max-w-xs bg-cta text-cta-foreground"
-              size="lg"
-            >
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Reservando stock...
-            </Button>
-          )}
+            {/* Step 1: Reserve stock */}
+            {status === "idle" && (
+              <Button
+                onClick={handleReserve}
+                disabled={!scriptLoaded}
+                className="w-full max-w-xs bg-cta text-cta-foreground hover:bg-cta/90"
+                size="lg"
+              >
+                Reservar y Pagar S/ {totalPrice.toFixed(2)}
+              </Button>
+            )}
 
-          {/* Step 2: Open Lightbox */}
-          {status === "reserved" && (
-            <Button
-              onClick={handlePay}
-              className="w-full max-w-xs bg-cta text-cta-foreground hover:bg-cta/90"
-              size="lg"
-            >
-              Abrir pasarela de pago
-            </Button>
-          )}
+            {status === "reserving" && (
+              <Button
+                disabled
+                className="w-full max-w-xs bg-cta text-cta-foreground"
+                size="lg"
+              >
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Reservando stock...
+              </Button>
+            )}
 
-          {status === "paying" && (
-            <Button
-              disabled
-              className="w-full max-w-xs bg-cta text-cta-foreground"
-              size="lg"
-            >
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Procesando pago...
-            </Button>
-          )}
+            {/* Step 2: Open Lightbox */}
+            {status === "reserved" && (
+              <Button
+                onClick={handlePay}
+                className="w-full max-w-xs bg-cta text-cta-foreground hover:bg-cta/90"
+                size="lg"
+              >
+                Abrir pasarela de pago
+              </Button>
+            )}
 
-          <p className="mt-3 text-center text-[10px] text-muted-foreground">
-            Tarjeta de prueba: 4474 1100 0000 0004 &middot; Exp: 12/25 &middot;
-            CVV: 111
-          </p>
+            {status === "paying" && (
+              <Button
+                disabled
+                className="w-full max-w-xs bg-cta text-cta-foreground"
+                size="lg"
+              >
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Procesando pago...
+              </Button>
+            )}
+
+            <p className="mt-3 text-center text-[10px] text-muted-foreground">
+              Tarjeta de prueba: 4474 1100 0000 0004 &middot; Exp: 12/25 &middot;
+              CVV: 111
+            </p>
+          </div>
         </div>
       </div>
 
