@@ -58,3 +58,7 @@ mal
 
 reddit
 - https://www.reddit.com/user/Ever4_
+
+
+
+Ok cool. Next we have to keep memory of the chat conversation. If i get out of the app/ path should i come back i should see my chat. There should be a button to restart the conversation after a limit of 20 message turns has been done. I think the chat is stateful right? I mean the messages from the start of the conversation are remembered by the agent. If that is so, then we need to add a lenght limit. 

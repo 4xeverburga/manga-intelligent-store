@@ -409,8 +409,10 @@ function CheckoutContent() {
                               : "text-muted-foreground"
                           }`}
                         >
-                          {info.stock} en stock
-                          {info.canBeDropshipped && " · Bajo pedido"}
+                          {info.canBeDropshipped && item.quantity > info.stock
+                            ? `${info.stock} en stock · ${item.quantity - info.stock} bajo pedido`
+                            : `${info.stock} en stock${info.canBeDropshipped ? " · Bajo pedido" : ""}`
+                          }
                         </span>
                       </div>
                     )}
