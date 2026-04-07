@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
-import Link from "next/link";
-import { Trash2, ShoppingCart, Plus, Minus, Check, X, Package } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Trash2, ShoppingCart, Plus, Minus, Check, X, Package, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -17,6 +17,13 @@ import { useShallow } from "zustand/react/shallow";
 import type { CartItem } from "@/core/domain/entities";
 
 type StockMap = Record<string, { stock: number; canBeDropshipped: boolean }>;
+
+interface InsufficientItem {
+  volumeId: string;
+  title: string;
+  requested: number;
+  available: number;
+}
 
 function CartItemRow({
   item,
@@ -54,14 +61,13 @@ function CartItemRow({
             <Package className="size-3 text-muted-foreground" />
             <span
               className={`text-[10px] ${
-                stockInfo.stock < item.quantity
+                !stockInfo.canBeDropshipped && stockInfo.stock < item.quantity
                   ? "text-destructive"
                   : "text-muted-foreground"
               }`}
             >
-              {stockInfo.canBeDropshipped
-                ? "Bajo pedido"
-                : `${stockInfo.stock} en stock`}
+              {stockInfo.stock} en stock
+              {stockInfo.canBeDropshipped && " · Bajo pedido"}
             </span>
           </div>
         )}
@@ -112,6 +118,7 @@ function CartItemRow({
 }
 
 export function CartSidebar() {
+  const router = useRouter();
   const totalItems = useCartStore(selectTotalItems);
   const totalPrice = useCartStore(selectTotalPrice);
   const allItems = useCartStore(useShallow((s) => s.items));
@@ -125,6 +132,9 @@ export function CartSidebar() {
   const isEmpty = totalItems === 0;
 
   const [stockMap, setStockMap] = useState<StockMap>({});
+  const [reserving, setReserving] = useState(false);
+  const [error, setError] = useState("");
+  const [insufficientItems, setInsufficientItems] = useState<InsufficientItem[]>([]);
 
   const fetchStock = useCallback(async (items: CartItem[]) => {
     if (items.length === 0) return;
@@ -138,6 +148,48 @@ export function CartSidebar() {
   useEffect(() => {
     fetchStock(allItems);
   }, [allItems, fetchStock]);
+
+  const handleReserveAndPay = useCallback(async () => {
+    if (allItems.length === 0) return;
+    setReserving(true);
+    setError("");
+    setInsufficientItems([]);
+
+    try {
+      const res = await fetch("/api/checkout/reserve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: allItems.map((i) => ({
+            volumeId: i.volumeId,
+            title: i.title,
+            quantity: i.quantity,
+            unitPrice: i.price,
+          })),
+        }),
+      });
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        if (errBody.insufficient?.length > 0) {
+          setInsufficientItems(errBody.insufficient);
+          fetchStock(allItems);
+        }
+        throw new Error(
+          errBody.error || "No se pudo reservar el stock"
+        );
+      }
+
+      const { orderId, expiresAt } = await res.json();
+      router.push(`/checkout?orderId=${orderId}&expiresAt=${encodeURIComponent(expiresAt)}`);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Error al reservar el stock"
+      );
+    } finally {
+      setReserving(false);
+    }
+  }, [allItems, router, fetchStock]);
 
   return (
     <div className="flex h-full flex-col">
@@ -211,12 +263,35 @@ export function CartSidebar() {
             </span>
             <span className="font-semibold">S/ {totalPrice.toFixed(2)}</span>
           </div>
+
+          {error && (
+            <p className="mt-2 text-xs text-destructive">{error}</p>
+          )}
+          {insufficientItems.length > 0 && (
+            <div className="mt-1 space-y-1">
+              {insufficientItems.map((item) => (
+                <p key={item.volumeId} className="text-[10px] text-destructive">
+                  {item.title}: pedido {item.requested}, disponible {item.available}
+                </p>
+              ))}
+            </div>
+          )}
+
           <Separator className="my-3" />
-          <Link href="/checkout">
-            <Button className="w-full bg-cta text-cta-foreground hover:bg-cta/90">
-              Ir al Checkout
-            </Button>
-          </Link>
+          <Button
+            onClick={handleReserveAndPay}
+            disabled={reserving}
+            className="w-full bg-cta text-cta-foreground hover:bg-cta/90"
+          >
+            {reserving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Reservando...
+              </>
+            ) : (
+              `Ir a Pagar S/ ${totalPrice.toFixed(2)}`
+            )}
+          </Button>
         </div>
       )}
     </div>
