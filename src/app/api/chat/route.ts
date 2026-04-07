@@ -12,7 +12,13 @@ const semanticSearch = new SemanticSearchMangas(mangaRepo, ai);
 
 export async function POST(req: Request) {
   const { messages: uiMessages, profileContext } = await req.json();
-  const messages = await convertToModelMessages(uiMessages);
+  const allMessages = await convertToModelMessages(uiMessages);
+
+  // Keep only the last 30 model messages to stay within context limits
+  // (each user turn produces 1+ messages; assistant responses may have tool steps)
+  const messages = allMessages.length > 30
+    ? allMessages.slice(-30)
+    : allMessages;
 
   let system = SYSTEM_PROMPT;
   if (profileContext) {
