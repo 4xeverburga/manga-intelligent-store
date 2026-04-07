@@ -34,10 +34,23 @@ function buildSystemPromptSection(profiles: UserInsight[]): string {
           section += `\n- Manga favoritos: ${(rd.favoriteManga as string[]).join(", ")}`;
         if (rd.favoriteAnime && (rd.favoriteAnime as string[]).length > 0)
           section += `\n- Anime favoritos: ${(rd.favoriteAnime as string[]).join(", ")}`;
+        if (rd.mangaList && (rd.mangaList as string[]).length > 0)
+          section += `\n- Lista de manga: ${(rd.mangaList as string[]).join(", ")}`;
+        if (rd.animeList && (rd.animeList as string[]).length > 0)
+          section += `\n- Lista de anime: ${(rd.animeList as string[]).join(", ")}`;
         if (rd.readingManga && (rd.readingManga as string[]).length > 0)
           section += `\n- Leyendo ahora: ${(rd.readingManga as string[]).join(", ")}`;
         if (rd.watchingAnime && (rd.watchingAnime as string[]).length > 0)
           section += `\n- Viendo ahora: ${(rd.watchingAnime as string[]).join(", ")}`;
+        if (rd.stats) {
+          const s = rd.stats as Record<string, Record<string, number>>;
+          if (s.anime?.total_entries > 0)
+            section += `\n- Estadísticas anime: ${s.anime.total_entries} títulos, score promedio ${s.anime.mean_score}`;
+          if (s.manga?.total_entries > 0)
+            section += `\n- Estadísticas manga: ${s.manga.total_entries} títulos, score promedio ${s.manga.mean_score}`;
+        }
+        if (rd.listsPrivate)
+          section += `\n- ⚠️ Listas configuradas como privadas en MAL (datos limitados)`;
         if (rd.subreddits && (rd.subreddits as string[]).length > 0)
           section += `\n- Subreddits activos: ${(rd.subreddits as string[]).join(", ")}`;
         if (rd.mangaSubreddits && (rd.mangaSubreddits as string[]).length > 0)

@@ -5,12 +5,13 @@ const JIKAN_BASE = "https://api.jikan.moe/v4";
 export class MALAdapter {
   async fetchProfile(username: string): Promise<UserInsight> {
     const encoded = encodeURIComponent(username);
-    const [profileRes, favoritesRes, mangaListRes, animeListRes] =
+    const [profileRes, favoritesRes, mangaListRes, animeListRes, statsRes] =
       await Promise.allSettled([
         fetch(`${JIKAN_BASE}/users/${encoded}`),
         fetch(`${JIKAN_BASE}/users/${encoded}/favorites`),
-        fetch(`${JIKAN_BASE}/users/${encoded}/mangalist?status=reading&limit=25`),
-        fetch(`${JIKAN_BASE}/users/${encoded}/animelist?status=watching&limit=25`),
+        fetch(`${JIKAN_BASE}/users/${encoded}/mangalist?order_by=score&sort=desc&limit=25`),
+        fetch(`${JIKAN_BASE}/users/${encoded}/animelist?order_by=score&sort=desc&limit=25`),
+        fetch(`${JIKAN_BASE}/users/${encoded}/statistics`),
       ]);
 
     if (profileRes.status === "rejected" || !profileRes.value.ok) {
@@ -62,28 +63,40 @@ export class MALAdapter {
         .filter(Boolean);
     }
 
-    // Currently reading manga
-    let readingManga: string[] = [];
-    if (mangaListRes.status === "fulfilled" && mangaListRes.value.ok) {
-      const mangaData = await mangaListRes.value.json();
-      readingManga = (mangaData?.data ?? [])
-        .map((e: { manga?: { title?: string } }) => e.manga?.title)
-        .filter(Boolean);
+    // Manga list (all statuses, sorted by score)
+    let mangaList: string[] = [];
+    let mangaListPrivate = false;
+    if (mangaListRes.status === "fulfilled") {
+      if (mangaListRes.value.ok) {
+        const mangaData = await mangaListRes.value.json();
+        mangaList = (mangaData?.data ?? [])
+          .map((e: { manga?: { title?: string } }) => e.manga?.title)
+          .filter(Boolean);
+      } else if (mangaListRes.value.status === 404) {
+        mangaListPrivate = true;
+      }
     }
 
-    // Currently watching anime
-    let watchingAnime: string[] = [];
-    if (animeListRes.status === "fulfilled" && animeListRes.value.ok) {
-      const animeData = await animeListRes.value.json();
-      watchingAnime = (animeData?.data ?? [])
-        .map((e: { anime?: { title?: string } }) => e.anime?.title)
-        .filter(Boolean);
+    // Anime list (all statuses, sorted by score)
+    let animeList: string[] = [];
+    let animeListPrivate = false;
+    if (animeListRes.status === "fulfilled") {
+      if (animeListRes.value.ok) {
+        const animeData = await animeListRes.value.json();
+        animeList = (animeData?.data ?? [])
+          .map((e: { anime?: { title?: string } }) => e.anime?.title)
+          .filter(Boolean);
+      } else if (animeListRes.value.status === 404) {
+        animeListPrivate = true;
+      }
     }
 
-    // Derive genres from favorites
-    const genres = [
-      ...new Set([...favMangaTitles, ...favAnimeTitles].slice(0, 10)),
-    ];
+    // Statistics (always public, useful fallback when lists are private)
+    let stats: Record<string, unknown> | undefined;
+    if (statsRes.status === "fulfilled" && statsRes.value.ok) {
+      const statsData = await statsRes.value.json();
+      stats = statsData?.data;
+    }
 
     return {
       username,
@@ -95,9 +108,10 @@ export class MALAdapter {
       rawData: {
         favoriteManga: favMangaTitles,
         favoriteAnime: favAnimeTitles,
-        readingManga,
-        watchingAnime,
-        totalTitlesKnown: genres.length,
+        mangaList,
+        animeList,
+        stats,
+        listsPrivate: mangaListPrivate || animeListPrivate,
       },
       syncedAt: new Date(),
     };

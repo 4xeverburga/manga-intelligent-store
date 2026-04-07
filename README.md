@@ -9,7 +9,7 @@ Built with Next.js 16 (App Router), Supabase PostgreSQL + pgvector, Google Gemin
 - **AI Chat Assistant** — Conversational manga recommendations using Gemini with tool calling (search + add-to-cart). Responds in Spanish.
 - **Semantic Search** — Natural language queries converted to embeddings via `gemini-embedding-001` (3072 dims), matched against pgvector with cosine similarity.
 - **Catalogue** — Browse 498 mangas with genre filtering, text search, pagination, and a "Find Similar" modal that uses vector similarity.
-- **Social Profile Integration** — Connect MyAnimeList and/or Reddit profiles. The system fetches favorites, reading lists, subreddits, and recent posts, then generates AI interest tags to personalize recommendations.
+- **Social Profile Integration** — Connect MyAnimeList and/or Reddit profiles. MAL: fetches favorites, full anime/manga lists (all statuses, sorted by score), and statistics (fallback when lists are private). Reddit: fetches post/comment activity and subreddit participation (public API only — subscriptions require OAuth2, not implemented). AI interest tags are generated only when backed by real profile data.
 - **Smart Cart** — AI can suggest items to the cart. Users always have full control over manually-added items (AI cannot remove or modify them).
 - **Niubiz Payment** — Sandbox integration with 2-step auth (security token → session token) and Lightbox checkout.
 
@@ -93,8 +93,9 @@ All business logic is extracted into use-case classes. Route handlers are thin H
 - **`SupabaseMangaRepository`** — Implements `IMangaRepository` using Supabase client + RPC `match_mangas` for vector search. Handles embedding parsing (Supabase returns vectors as strings).
 - **`GeminiAdapter`** — Implements `IAIService` using Vercel AI SDK `embed()` with `gemini-embedding-001`.
 - **`NiubizAdapter`** — Implements `IPaymentProvider` with 2-step auth flow (Basic Auth → security token → session token → Lightbox).
-- **`MALAdapter`** / **`RedditAdapter`** — Fetch user profiles from MyAnimeList and Reddit public APIs.
-- **`ProfileServiceAdapter`** — Implements `IProfileService`, dispatches to MAL/Reddit adapters + Gemini for AI interest tag generation.
+- **`MALAdapter`** — Fetches MAL profile via Jikan API v4: profile, favorites, anime/manga lists (all statuses, sorted by score), and statistics. Detects private lists (404) and includes stats as fallback. Rate-limited (~3 req/s).
+- **`RedditAdapter`** — Fetches Reddit profile, posts, and comments via public JSON API. Extracts subreddit activity and manga-related post titles. Subscriptions are private (would require OAuth2).
+- **`ProfileServiceAdapter`** — Implements `IProfileService`, dispatches to MAL/Reddit adapters + Gemini for AI interest tag generation. Tags are only generated when backed by real data (empty profiles → `[]`).
 
 ## Database
 
@@ -154,6 +155,11 @@ DATABASE_URL=postgresql://postgres:xxx@db.xxx.supabase.co:5432/postgres
 GOOGLE_GENERATIVE_AI_API_KEY=AIza...
 GEMINI_MODEL=gemini-2.0-flash          # optional, defaults to gemini-2.0-flash
 
+# Chat & Reservation Limits
+NEXT_PUBLIC_CHAT_MAX_TURNS=20           # max user messages per chat session
+NEXT_PUBLIC_RESERVATION_TTL_SECONDS=300 # stock reservation + Niubiz expiration
+CHAT_MAX_CONTEXT_MESSAGES=30           # server-side message trim for Gemini context
+
 # Niubiz (sandbox)
 NIUBIZ_MERCHANT_ID=...
 NIUBIZ_API_USERNAME=...
@@ -192,9 +198,12 @@ npm test               # Run all tests once
 npm run test:watch     # Watch mode
 ```
 
-Integration tests hit the real Supabase database (requires `.env.local`). Current tests:
+Integration tests hit real APIs (requires `.env.test` or `.env.local`). Create `.env.test` with `TEST_MAL_USERNAME` and `TEST_REDDIT_USERNAME` for profile tests.
+
+Current tests:
 
 - **FindSimilarMangas** — Takes Berserk, finds similar mangas via vector search, logs results for human evaluation.
+- **Profile Extraction Pipeline** — 3-step test: (1) fetch raw MAL + Reddit profiles, (2) AI-generated interest tags via Gemini, (3) final system prompt section. Verifies the full data pipeline from API to what the chat model sees.
 
 ### Docker
 
@@ -221,7 +230,16 @@ The chat (`/api/chat`) uses Vercel AI SDK `streamText` with two tools:
 1. **`search_manga`** — Semantic search: user query → Gemini embedding → pgvector `match_mangas` RPC → returns matching mangas with similarity scores.
 2. **`add_to_cart`** — Adds a manga to the user's cart (source: `"ai-suggested"`).
 
-The system prompt instructs the AI to always search before recommending, never invent mangas, and never modify user-added cart items. When user profiles are connected, profile data (favorites, subreddits, reading lists) is injected into the system prompt for personalized recommendations.
+The system prompt instructs the AI to always search before recommending, never invent mangas, and never modify user-added cart items.
+
+When user profiles are connected, profile data is injected into the system prompt:
+- **Per-platform sections** — MAL: favorites, anime/manga lists, statistics, private-list warnings. Reddit: subreddits, manga-related posts.
+- **"Resumen general" section** — AI-generated interest tags and favorite genres (merged from all platforms). Only shown when backed by real data; otherwise shows a disclaimer instructing the model to rely on conversation context.
+
+Chat features:
+- **Persistence** — Messages stored in localStorage, survive page reloads
+- **Turn limit** — Configurable max user messages (`NEXT_PUBLIC_CHAT_MAX_TURNS`, default 20)
+- **Context trim** — Server trims to last N messages (`CHAT_MAX_CONTEXT_MESSAGES`, default 30)
 
 ## Git Branches
 
@@ -234,8 +252,18 @@ The system prompt instructs the AI to always search before recommending, never i
 - Extended domain layer (MangaWithSimilarity, SearchFilters, PaginatedResult)
 - Added `searchPaginated()` and `getDistinctGenres()` to repository
 - Fixed embedding parsing bug (Supabase returns vector columns as strings, not arrays)
-- Added Vitest with integration tests for similarity search
+- Added Vitest with integration tests (similarity search + profile extraction pipeline)
 - Added ProfileServiceAdapter implementing IProfileService port
+- Volume-based purchasing with pricing system (S/ 25-45 per volume)
+- Stock reservation system with PG functions (`reserve_stock`, `confirm_order`, `release_reservation`)
+- Dropship support (up to 3 units beyond stock per item)
+- Chat persistence (localStorage) with configurable turn limit
+- Parameterized env vars for TTL, chat limits, context size
+- MAL adapter: fetches all statuses (not just watching/reading), includes statistics fallback, detects private lists
+- AI interest tags: only generated when backed by real profile data (no hallucination from empty profiles)
+- System prompt: per-platform sections + separate "Resumen general" with disclaimer when no data
+- Descriptive Spanish error messages for expired/processed/not-found checkout sessions
+- React strict mode fix for stock reservation double-release
 
 ## Roadmap / TODO
 
@@ -247,5 +275,6 @@ The system prompt instructs the AI to always search before recommending, never i
 - Embedding model `gemini-embedding-001` is free tier; `gemini-embedding-2-preview` supports multimodal if needed later.
 - Supabase returns pgvector columns as strings. The repository's `parseEmbedding()` method handles this (JSON.parse for strings, passthrough for arrays).
 - Environment variables are validated at startup in production via `instrumentation.ts` → `validateEnv()` (Zod schema).
-- Cart prices are currently hardcoded/synthetic (no real pricing source).
+- Reddit profile extraction only sees subreddits where the user has posted/commented. Subscriptions are private and would require OAuth2 (not implemented — Reddit app registered but flow not built).
+- MAL anime/manga lists return 404 when set to private. The adapter falls back to the statistics endpoint (always public) so Gemini still gets aggregate data (total entries, mean score).
 - No authentication — profiles are client-side only (Zustand persisted to localStorage).
