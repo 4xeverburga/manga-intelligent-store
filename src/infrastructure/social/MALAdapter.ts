@@ -1,8 +1,108 @@
 import type { UserInsight } from "@/core/domain/entities/UserInsight";
 
 const JIKAN_BASE = "https://api.jikan.moe/v4";
+const MAL_API_BASE = "https://api.myanimelist.net/v2";
 
 export class MALAdapter {
+  /**
+   * Fetch profile using the official MAL API v2 (requires OAuth2 access token).
+   * Returns richer data including private lists.
+   */
+  async fetchProfileWithToken(accessToken: string): Promise<UserInsight> {
+    const headers = { Authorization: `Bearer ${accessToken}` };
+
+    const [userRes, animeListRes, mangaListRes] = await Promise.allSettled([
+      fetch(
+        `${MAL_API_BASE}/users/@me?fields=anime_statistics,manga_statistics`,
+        { headers }
+      ),
+      fetch(
+        `${MAL_API_BASE}/users/@me/animelist?fields=list_status{score,status}&sort=list_score&limit=100`,
+        { headers }
+      ),
+      fetch(
+        `${MAL_API_BASE}/users/@me/mangalist?fields=list_status{score,status}&sort=list_score&limit=100`,
+        { headers }
+      ),
+    ]);
+
+    if (userRes.status === "rejected" || !userRes.value.ok) {
+      const status =
+        userRes.status === "fulfilled" ? userRes.value.status : 0;
+      if (status === 401)
+        throw new Error("MAL token expirado (401). Requiere refresh.");
+      throw new Error(`Error al obtener perfil de MAL (HTTP ${status})`);
+    }
+
+    const user = await userRes.value.json();
+    const username = user.name;
+    const avatarUrl = user.picture;
+
+    // Anime list
+    let animeList: string[] = [];
+    if (animeListRes.status === "fulfilled" && animeListRes.value.ok) {
+      const data = await animeListRes.value.json();
+      animeList = (data?.data ?? [])
+        .map(
+          (e: { node?: { title?: string } }) => e.node?.title
+        )
+        .filter(Boolean);
+    }
+
+    // Manga list
+    let mangaList: string[] = [];
+    if (mangaListRes.status === "fulfilled" && mangaListRes.value.ok) {
+      const data = await mangaListRes.value.json();
+      mangaList = (data?.data ?? [])
+        .map(
+          (e: { node?: { title?: string } }) => e.node?.title
+        )
+        .filter(Boolean);
+    }
+
+    // Stats from the user profile response
+    const animeStats = user.anime_statistics;
+    const mangaStats = user.manga_statistics;
+    const stats: Record<string, Record<string, number>> = {};
+    if (animeStats) {
+      stats.anime = {
+        total_entries:
+          animeStats.num_items ?? animeStats.num_items_completed ?? 0,
+        mean_score: animeStats.mean_score ?? 0,
+        episodes_watched: animeStats.num_episodes ?? 0,
+        completed: animeStats.num_items_completed ?? 0,
+      };
+    }
+    if (mangaStats) {
+      stats.manga = {
+        total_entries:
+          mangaStats.num_items ?? mangaStats.num_items_completed ?? 0,
+        mean_score: mangaStats.mean_score ?? 0,
+        chapters_read: mangaStats.num_chapters_read ?? 0,
+        completed: mangaStats.num_items_completed ?? 0,
+      };
+    }
+
+    return {
+      username,
+      platform: "mal",
+      avatarUrl,
+      favoriteGenres: [],
+      interestTags: [],
+      rawData: {
+        favoriteManga: [],
+        favoriteAnime: [],
+        mangaList,
+        animeList,
+        stats: Object.keys(stats).length > 0 ? stats : undefined,
+        listsPrivate: false, // OAuth always has access
+        source: "oauth",
+      },
+      syncedAt: new Date(),
+    };
+  }
+
+  /** Fetch profile using Jikan public API (no auth required, limited by privacy settings) */
   async fetchProfile(username: string): Promise<UserInsight> {
     const encoded = encodeURIComponent(username);
     const [profileRes, favoritesRes, mangaListRes, animeListRes, statsRes] =

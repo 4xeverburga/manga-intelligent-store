@@ -39,10 +39,8 @@ export function Chat() {
 }
 
 function ChatInner() {
-  const profiles = useProfileStore((s) => s.profiles);
-
-  const onboardingMessage = useMemo<UIMessage>(() => {
-    const hasProfiles = Object.keys(profiles).length > 0;
+  const makeOnboardingMessage = useCallback((): UIMessage => {
+    const hasProfiles = Object.keys(useProfileStore.getState().profiles).length > 0;
     return {
       id: "onboarding",
       role: "assistant" as const,
@@ -53,8 +51,12 @@ function ChatInner() {
         },
       ],
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only compute once on mount — profiles are already hydrated
+  }, []);
+
+  const onboardingMessage = useMemo<UIMessage>(
+    () => makeOnboardingMessage(),
+    [makeOnboardingMessage]
+  );
 
   // Load persisted messages from localStorage (or fall back to onboarding)
   const initialMessages = useMemo<UIMessage[]>(() => {
@@ -131,10 +133,10 @@ function ChatInner() {
   };
 
   const handleRestart = useCallback(() => {
-    const fresh = [onboardingMessage];
+    const fresh = [makeOnboardingMessage()];
     setMessages(fresh);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(fresh));
-  }, [onboardingMessage, setMessages]);
+  }, [makeOnboardingMessage, setMessages]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {

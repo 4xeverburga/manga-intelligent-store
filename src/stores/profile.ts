@@ -7,6 +7,8 @@ interface ProfileState {
   loadingPlatform: PlatformType | null;
   error: string | null;
   connectProfile: (username: string, platform: PlatformType) => Promise<void>;
+  connectMALOAuth: () => void;
+  fetchMALOAuthProfile: () => Promise<void>;
   disconnectProfile: (platform: PlatformType) => void;
   refreshProfile: (platform: PlatformType) => Promise<void>;
   clearAll: () => void;
@@ -55,6 +57,31 @@ export const useProfileStore = create<ProfileState>()(
         }
       },
 
+      connectMALOAuth: () => {
+        window.location.href = "/api/auth/mal";
+      },
+
+      fetchMALOAuthProfile: async () => {
+        set({ loadingPlatform: "mal", error: null });
+        try {
+          const res = await fetch("/api/auth/mal/profile");
+          const data = await res.json();
+          if (!res.ok) {
+            set({
+              error: data.error || "Error al obtener perfil MAL",
+              loadingPlatform: null,
+            });
+            return;
+          }
+          set((s) => ({
+            profiles: { ...s.profiles, mal: data },
+            loadingPlatform: null,
+          }));
+        } catch {
+          set({ error: "Error de conexión con MAL", loadingPlatform: null });
+        }
+      },
+
       disconnectProfile: (platform) =>
         set((s) => {
           const { [platform]: _, ...rest } = s.profiles;
@@ -64,6 +91,11 @@ export const useProfileStore = create<ProfileState>()(
       refreshProfile: async (platform) => {
         const existing = get().profiles[platform];
         if (!existing) return;
+        // OAuth-connected MAL profiles refresh via the OAuth endpoint
+        if (platform === "mal" && existing.rawData?.source === "oauth") {
+          await get().fetchMALOAuthProfile();
+          return;
+        }
         await get().connectProfile(existing.username, platform);
       },
 
