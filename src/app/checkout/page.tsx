@@ -232,7 +232,12 @@ function CheckoutContent() {
         body: JSON.stringify({ orderId, purchaseNumber }),
       });
 
-      if (!res.ok) throw new Error("Failed to create session");
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(
+          errBody.error || "No se pudo crear la sesión de pago"
+        );
+      }
 
       // Amount comes from server (DB order total), not client store
       const { sessionToken, merchantId, amount } = await res.json();

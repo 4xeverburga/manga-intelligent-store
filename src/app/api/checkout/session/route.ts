@@ -31,10 +31,22 @@ export async function POST(req: Request) {
       .eq("id", orderId)
       .single();
 
-    if (!order || order.status !== "pending") {
+    if (!order) {
       return NextResponse.json(
-        { error: "Order not found or not pending" },
+        { error: "Pedido no encontrado. Vuelve al carrito y crea una nueva reserva." },
         { status: 404 }
+      );
+    }
+
+    if (order.status !== "pending") {
+      return NextResponse.json(
+        {
+          error:
+            order.status === "expired"
+              ? "Tu reserva ha expirado. Vuelve al carrito para crear una nueva."
+              : `El pedido ya fue procesado (estado: ${order.status}).`,
+        },
+        { status: 409 }
       );
     }
 
