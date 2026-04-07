@@ -83,6 +83,7 @@ function CheckoutContent() {
   );
   const orderIdRef = useRef<string | null>(urlOrderId);
   const statusRef = useRef<CheckoutStatus>("reserved");
+  const releaseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load Niubiz Lightbox script
   useEffect(() => {
@@ -175,6 +176,12 @@ function CheckoutContent() {
   }, [status]);
 
   useEffect(() => {
+    // Cancel any pending release from a strict-mode remount
+    if (releaseTimeoutRef.current) {
+      clearTimeout(releaseTimeoutRef.current);
+      releaseTimeoutRef.current = null;
+    }
+
     const release = () => {
       const id = orderIdRef.current;
       const s = statusRef.current;
@@ -195,7 +202,8 @@ function CheckoutContent() {
     // SPA navigation (component unmount)
     return () => {
       window.removeEventListener("beforeunload", release);
-      release();
+      // Defer release to survive React strict mode double-mount
+      releaseTimeoutRef.current = setTimeout(release, 100);
     };
   }, []);
 
