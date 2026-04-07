@@ -53,7 +53,7 @@ function CartItemRow({
         <p className="truncate text-xs font-medium">{item.title}</p>
         <div className="flex items-center gap-1">
           <span className="text-xs text-muted-foreground">
-            S/ {(item.quantity * 1.0).toFixed(2)}
+            S/ {item.price.toFixed(2)}
           </span>
         </div>
         {stockInfo && (
@@ -145,9 +145,12 @@ export function CartSidebar() {
     } catch { /* ignore */ }
   }, []);
 
+  // Only re-fetch stock when the set of volume IDs changes, not on quantity updates
+  const volumeIdKey = allItems.map((i) => i.volumeId).sort().join(",");
   useEffect(() => {
     fetchStock(allItems);
-  }, [allItems, fetchStock]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [volumeIdKey, fetchStock]);
 
   const handleReserveAndPay = useCallback(async () => {
     if (allItems.length === 0) return;

@@ -75,6 +75,7 @@ export const mangaVolumes = pgTable(
     editor: text("editor"),
     editionYear: integer("edition_year"),
     isCrossover: boolean("is_crossover").notNull().default(false),
+    price: real("price").notNull().default(29.9),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -143,6 +144,7 @@ export const orderItems = pgTable(
     title: text("title").notNull(),
     quantity: integer("quantity").notNull(),
     unitPrice: real("unit_price").notNull(),
+    reservedFromStock: integer("reserved_from_stock").notNull().default(0),
   },
   (table) => [index("order_items_order_id_idx").on(table.orderId)]
 );

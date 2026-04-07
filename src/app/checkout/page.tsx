@@ -99,7 +99,8 @@ function CheckoutContent() {
     document.body.appendChild(script);
   }, []);
 
-  // Fetch stock for cart items
+  // Fetch stock for cart items (only when volume set changes)
+  const volumeIdKey = items.map((i) => i.volumeId).sort().join(",");
   useEffect(() => {
     if (items.length === 0) return;
     const ids = items.map((i) => i.volumeId).join(",");
@@ -107,7 +108,8 @@ function CheckoutContent() {
       .then((r) => (r.ok ? r.json() : {}))
       .then(setStockMap)
       .catch(() => {});
-  }, [items]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [volumeIdKey]);
 
   // Initialize seconds left from URL param
   useEffect(() => {
@@ -414,7 +416,7 @@ function CheckoutContent() {
                     )}
                   </div>
                   <span className="text-sm font-medium">
-                    S/ {(item.quantity * 1.0).toFixed(2)}
+                    S/ {(item.quantity * item.price).toFixed(2)}
                   </span>
                 </div>
               );

@@ -69,7 +69,7 @@ export const selectTotalItems = (state: CartState) =>
   state.items.reduce((acc, i) => acc + i.quantity, 0);
 
 export const selectTotalPrice = (state: CartState) =>
-  state.items.reduce((acc, i) => acc + i.quantity, 0) * 1.0;
+  state.items.reduce((acc, i) => acc + i.quantity * i.price, 0);
 
 export const selectManualItems = (state: CartState) =>
   state.items.filter((i) => i.source === "manual");

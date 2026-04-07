@@ -36,7 +36,7 @@ async function getVolumes(mangaId: string) {
     .from("manga_volumes")
     .select(`
       id, manga_id, volume_number, title, isbn, cover_url, editor,
-      edition_year, is_crossover,
+      edition_year, is_crossover, price,
       inventory ( stock, can_be_dropshipped )
     `)
     .eq("manga_id", mangaId)
@@ -54,6 +54,7 @@ async function getVolumes(mangaId: string) {
       editor: v.editor as string | null,
       editionYear: v.edition_year as number | null,
       isCrossover: v.is_crossover as boolean,
+      price: (v.price as number) ?? 29.9,
       stock: (inv?.stock as number) ?? 0,
       canBeDropshipped: (inv?.can_be_dropshipped as boolean) ?? false,
     };

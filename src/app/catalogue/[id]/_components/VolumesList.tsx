@@ -18,6 +18,7 @@ export interface Volume {
   editor: string | null;
   editionYear: number | null;
   isCrossover: boolean;
+  price: number;
   stock: number;
   canBeDropshipped: boolean;
 }
@@ -184,6 +185,11 @@ function VolumeRow({
         </div>
       </div>
 
+      {/* Price */}
+      <span className="shrink-0 text-sm font-semibold text-foreground">
+        S/ {vol.price.toFixed(2)}
+      </span>
+
       {/* Availability */}
       <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
         <AvailIcon className={`size-4 ${avail.color}`} />
@@ -207,7 +213,7 @@ function VolumeRow({
               volumeId: vol.id,
               title: vol.title,
               imageUrl: coverSrc,
-              price: 1.0,
+              price: vol.price,
               quantity: 1,
               source: "manual",
               addedAt: new Date(),
