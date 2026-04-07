@@ -26,7 +26,7 @@ export class ProfileServiceAdapter implements IProfileService {
 
       const { text } = await generateText({
         model: google(process.env.GEMINI_MODEL || ""),
-        prompt: `Analiza este perfil de usuario de ${label} y genera 5-8 tags de interés para recomendaciones de manga. Los tags deben ser en español, descriptivos y cortos (2-3 palabras cada uno).
+        prompt: `Analiza este perfil de usuario de ${label} y genera tags de interés para recomendaciones de manga. Los tags deben ser en español, descriptivos y cortos (2-3 palabras cada uno).
 
 Datos del perfil:
 - Username: ${profile.username}
@@ -34,13 +34,19 @@ Datos del perfil:
 - Géneros favoritos: ${profile.favoriteGenres.join(", ") || "No disponible"}
 - Datos adicionales: ${JSON.stringify(profile.rawData ?? {})}
 
-Retorna SOLO un JSON array de strings, sin explicación. Ejemplo: ["Shonen clásico", "Dark fantasy", "Romance slice-of-life"]`,
+REGLAS ESTRICTAS:
+- Genera tags SOLO basándote en datos concretos del perfil (títulos, géneros, listas, subreddits de manga/anime).
+- Si el perfil no tiene datos útiles (listas vacías, sin favoritos, sin actividad de manga), retorna un array vacío [].
+- NO inventes ni adivines gustos. Cada tag debe estar respaldado por al menos un dato real del perfil.
+- Máximo 5 tags. Menos es mejor si hay pocos datos.
+
+Retorna SOLO un JSON array de strings, sin explicación. Ejemplo: ["Shonen clásico", "Dark fantasy"] o [] si no hay datos.`,
       });
 
       const parsed = JSON.parse(
         text.replace(/```json?\n?|\n?```/g, "").trim()
       );
-      if (Array.isArray(parsed)) return parsed.slice(0, 8);
+      if (Array.isArray(parsed)) return parsed.slice(0, 5);
       return [];
     } catch {
       return [];

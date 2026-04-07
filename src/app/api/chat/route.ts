@@ -46,11 +46,18 @@ export async function POST(req: Request) {
         return section;
       }
     );
-    system += `\n\n## Perfil del usuario\n${platformSections.join("\n\n")}
-- Intereses IA: ${(profileContext.interestTags ?? []).join(", ") || "No disponible"}
-- G\u00e9neros favoritos: ${(profileContext.favoriteGenres ?? []).join(", ") || "No disponible"}
+    const tags = (profileContext.interestTags ?? []).join(", ");
+    const genres = (profileContext.favoriteGenres ?? []).join(", ");
 
-IMPORTANTE: Ya tienes los datos del usuario. NO le preguntes qu\u00e9 g\u00e9neros le gustan ni cu\u00e1l es su manga favorito — ya lo sabes por sus perfiles. Usa esta informaci\u00f3n directamente para personalizar recomendaciones. Cuando el usuario pregunte qu\u00e9 sabes de su perfil, responde con datos CONCRETOS: t\u00edtulos espec\u00edficos, subreddits, animes, etc.`;
+    system += `\n\n## Perfil del usuario\n${platformSections.join("\n\n")}`;
+
+    if (tags || genres) {
+      system += `\n\n### Resumen general`;
+      if (tags) system += `\n- Intereses IA: ${tags}`;
+      if (genres) system += `\n- Géneros favoritos: ${genres}`;
+    }
+
+    system += `\n\nIMPORTANTE: Ya tienes los datos del usuario. NO le preguntes qué géneros le gustan ni cuál es su manga favorito — ya lo sabes por sus perfiles. Usa esta información directamente para personalizar recomendaciones. Cuando el usuario pregunte qué sabes de su perfil, responde con datos CONCRETOS: títulos específicos, subreddits, animes, etc. Si un campo dice "No disponible", no lo menciones.`;
   }
 
   const result = streamText({

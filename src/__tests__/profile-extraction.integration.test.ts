@@ -52,9 +52,18 @@ function buildSystemPromptSection(profiles: UserInsight[]): string {
     }
   );
 
-  return `## Perfil del usuario\n${platformSections.join("\n\n")}
-- Intereses IA: ${profileContext.interestTags.join(", ") || "No disponible"}
-- Géneros favoritos: ${profileContext.favoriteGenres.join(", ") || "No disponible"}`;
+  const tags = profileContext.interestTags.join(", ");
+  const genres = profileContext.favoriteGenres.join(", ");
+
+  let result = `## Perfil del usuario\n${platformSections.join("\n\n")}`;
+
+  if (tags || genres) {
+    result += `\n\n### Resumen general`;
+    if (tags) result += `\n- Intereses IA: ${tags}`;
+    if (genres) result += `\n- Géneros favoritos: ${genres}`;
+  }
+
+  return result;
 }
 
 describe("Profile extraction — what Gemini actually sees", () => {
