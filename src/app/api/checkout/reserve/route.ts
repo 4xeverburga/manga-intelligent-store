@@ -79,10 +79,25 @@ export async function POST(req: Request) {
       error instanceof Error &&
       error.message.includes("DROPSHIP_LIMIT_EXCEEDED")
     ) {
+      // Format: DROPSHIP_LIMIT_EXCEEDED::volume_id::available::requested
+      const parts = error.message.split("::");
+      const volumeId = parts[1];
+      const available = Number(parts[2]) || 0;
+      const requested = Number(parts[3]) || 0;
+      const matchedItem = parsedItems.find((i) => i.volumeId === volumeId);
       return NextResponse.json(
         {
           error:
             "Solo se pueden pedir hasta 3 unidades bajo pedido por volumen. Reduce la cantidad e intenta de nuevo.",
+          insufficient: [
+            {
+              volumeId,
+              title: matchedItem?.title ?? "Volumen desconocido",
+              requested,
+              available,
+              canBeDropshipped: true,
+            },
+          ],
         },
         { status: 409 }
       );

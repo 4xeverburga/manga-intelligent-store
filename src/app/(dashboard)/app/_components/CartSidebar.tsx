@@ -23,6 +23,7 @@ interface InsufficientItem {
   title: string;
   requested: number;
   available: number;
+  canBeDropshipped?: boolean;
 }
 
 function CartItemRow({
@@ -301,7 +302,10 @@ export function CartSidebar() {
             <div className="mt-1 space-y-1">
               {insufficientItems.map((item) => (
                 <p key={item.volumeId} className="text-[10px] text-destructive">
-                  {item.title}: pedido {item.requested}, disponible {item.available}
+                  {item.title}:{" "}
+                  {item.canBeDropshipped
+                    ? `pediste ${item.requested}, máx. ${item.available + 3} (${item.available} stock + 3 bajo pedido)`
+                    : `pediste ${item.requested}, solo hay ${item.available} disponible${item.available !== 1 ? "s" : ""}`}
                 </p>
               ))}
             </div>
