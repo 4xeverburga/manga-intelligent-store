@@ -99,6 +99,11 @@ function CartItemRow({
             <Plus className="size-3" />
           </Button>
         </div>
+        {stockInfo && !stockInfo.canBeDropshipped && item.quantity >= stockInfo.stock && (
+          <p className="mt-0.5 text-[10px] text-amber-500">
+            No hay más stock disponible
+          </p>
+        )}
       </div>
       <div className="flex shrink-0 flex-col gap-1">
         {showApprove && (
