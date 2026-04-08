@@ -64,6 +64,13 @@
       "when": 1775580000001,
       "tag": "0008_fix_reservation_stock_inflation",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1775580000002,
+      "tag": "0009_auto_cleanup_expired_reservations",
+      "breakpoints": true
     }
   ]
 }
