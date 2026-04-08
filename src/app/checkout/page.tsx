@@ -100,17 +100,19 @@ function CheckoutContent() {
     document.body.appendChild(script);
   }, []);
 
-  // Fetch stock for cart items (only when volume set changes)
+  // Fetch stock for cart items — pass orderId to get pre-reservation stock
   const volumeIdKey = items.map((i) => i.volumeId).sort().join(",");
   useEffect(() => {
     if (items.length === 0) return;
     const ids = items.map((i) => i.volumeId).join(",");
-    fetch(`/api/mangas/stock?ids=${ids}`)
+    const params = new URLSearchParams({ ids });
+    if (orderId) params.set("orderId", orderId);
+    fetch(`/api/mangas/stock?${params}`)
       .then((r) => (r.ok ? r.json() : {}))
       .then(setStockMap)
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [volumeIdKey]);
+  }, [volumeIdKey, orderId]);
 
   // Initialize seconds left from URL param
   useEffect(() => {
