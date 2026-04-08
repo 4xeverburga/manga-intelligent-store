@@ -1,7 +1,8 @@
--- Enable pg_cron extension (available on Supabase by default)
+-- Enable pg_cron (available on Supabase by default)
 CREATE EXTENSION IF NOT EXISTS pg_cron;
+--> statement-breakpoint
 
--- Schedule cleanup_expired_reservations to run every minute
+-- Release abandoned reservations every minute
 SELECT cron.schedule(
   'cleanup-expired-reservations',
   '* * * * *',
