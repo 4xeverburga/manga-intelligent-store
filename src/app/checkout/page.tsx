@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ShoppingBag,
   ArrowLeft,
@@ -51,6 +51,7 @@ export default function CheckoutPage() {
 }
 
 function CheckoutContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const items = useCartStore(useShallow((s) => s.items));
   const totalItems = useCartStore(selectTotalItems);
@@ -83,7 +84,6 @@ function CheckoutContent() {
   );
   const orderIdRef = useRef<string | null>(urlOrderId);
   const statusRef = useRef<CheckoutStatus>("reserved");
-  const releaseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load Niubiz Lightbox script
   useEffect(() => {
@@ -174,13 +174,8 @@ function CheckoutContent() {
     statusRef.current = status;
   }, [status]);
 
+  // Release reservation on tab close / hard refresh only
   useEffect(() => {
-    // Cancel any pending release from a strict-mode remount
-    if (releaseTimeoutRef.current) {
-      clearTimeout(releaseTimeoutRef.current);
-      releaseTimeoutRef.current = null;
-    }
-
     const release = () => {
       const id = orderIdRef.current;
       const s = statusRef.current;
@@ -195,16 +190,24 @@ function CheckoutContent() {
       }
     };
 
-    // Hard refresh / tab close
     window.addEventListener("beforeunload", release);
-
-    // SPA navigation (component unmount)
-    return () => {
-      window.removeEventListener("beforeunload", release);
-      // Defer release to survive React strict mode double-mount
-      releaseTimeoutRef.current = setTimeout(release, 100);
-    };
+    return () => window.removeEventListener("beforeunload", release);
   }, []);
+
+  // Explicit release + navigate — used by all "back" buttons
+  const handleGoBack = useCallback(async () => {
+    const id = orderIdRef.current;
+    const s = statusRef.current;
+    if (id && (s === "reserved" || s === "paying")) {
+      await fetch("/api/checkout/release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: id }),
+      }).catch(() => {});
+      setOrderId(null);
+    }
+    router.push("/app");
+  }, [router]);
 
   // Save delivery info and open Niubiz Lightbox
   const handlePay = useCallback(async () => {
@@ -375,11 +378,9 @@ function CheckoutContent() {
   return (
     <div className="mx-auto flex min-h-screen max-w-4xl flex-col gap-8 px-4 py-12">
       <div className="flex items-center gap-3">
-        <Link href="/app">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </Link>
+        <Button variant="ghost" size="icon" onClick={handleGoBack}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
         <h1 className="text-2xl font-bold">Checkout</h1>
       </div>
 
@@ -545,12 +546,10 @@ function CheckoutContent() {
                 <p className="mb-4 text-center text-sm text-destructive">
                   {errorMsg}
                 </p>
-                <Link href="/app">
-                  <Button variant="outline">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Volver al Carrito
-                  </Button>
-                </Link>
+                <Button variant="outline" onClick={handleGoBack}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Volver al Carrito
+                </Button>
               </>
             ) : (
               <>
@@ -606,12 +605,12 @@ function CheckoutContent() {
       </div>
 
       <div className="text-center">
-        <Link
-          href="/app"
+        <button
+          onClick={handleGoBack}
           className="text-sm text-muted-foreground hover:text-foreground"
         >
           ← Volver al Chat
-        </Link>
+        </button>
       </div>
     </div>
   );
