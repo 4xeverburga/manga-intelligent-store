@@ -4,6 +4,7 @@ const envSchema = z.object({
   GOOGLE_GENERATIVE_AI_API_KEY: z.string().min(1),
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: z.string().min(1),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   NIUBIZ_MERCHANT_ID: z.string().min(1),
   NIUBIZ_API_USERNAME: z.string().min(1),
   NIUBIZ_API_PASS: z.string().min(1),
