@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            "Stock insuficiente — es posible que otro usuario haya reservado estos volúmenes. Actualiza la página para ver el stock actual.",
+            "Stock insuficiente — es posible que otro usuario haya reservado. Actualiza la página para ver el stock actual.",
           insufficient,
         },
         { status: 409 }
@@ -89,7 +89,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            "No se pudo reservar — es posible que otro usuario haya reservado este volumen. Actualiza la página para ver el stock actual.",
+            "No se pudo reservar — es posible que otro usuario haya reservado. Actualiza la página para ver el stock actual.",
           insufficient: [
             {
               volumeId,
