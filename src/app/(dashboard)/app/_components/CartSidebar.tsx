@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Trash2, ShoppingCart, Plus, Minus, Check, X, Package, Loader2 } from "lucide-react";
@@ -173,7 +173,15 @@ export function CartSidebar() {
 
   // Only re-fetch stock when the set of volume IDs changes, not on quantity updates
   const volumeIdKey = allItems.map((i) => i.volumeId).sort().join(",");
+  const initialFetchDone = useRef(false);
   useEffect(() => {
+    // On first mount, delay fetch so any pending reservation release (sendBeacon)
+    // from checkout can complete before we read inventory.
+    if (!initialFetchDone.current) {
+      initialFetchDone.current = true;
+      const t = setTimeout(() => fetchStock(allItems), 500);
+      return () => clearTimeout(t);
+    }
     fetchStock(allItems);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [volumeIdKey, fetchStock]);
