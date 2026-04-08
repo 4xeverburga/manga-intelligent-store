@@ -100,19 +100,16 @@ function CheckoutContent() {
     document.body.appendChild(script);
   }, []);
 
-  // Fetch stock for cart items — pass orderId to get pre-reservation stock
-  const volumeIdKey = items.map((i) => i.volumeId).sort().join(",");
+  // Load pre-reservation stock snapshot from sessionStorage (set by CartSidebar)
   useEffect(() => {
-    if (items.length === 0) return;
-    const ids = items.map((i) => i.volumeId).join(",");
-    const params = new URLSearchParams({ ids });
-    if (orderId) params.set("orderId", orderId);
-    fetch(`/api/mangas/stock?${params}`)
-      .then((r) => (r.ok ? r.json() : {}))
-      .then(setStockMap)
-      .catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [volumeIdKey, orderId]);
+    try {
+      const cached = sessionStorage.getItem("checkout_stock");
+      if (cached) {
+        setStockMap(JSON.parse(cached));
+        sessionStorage.removeItem("checkout_stock");
+      }
+    } catch {}
+  }, []);
 
   // Initialize seconds left from URL param
   useEffect(() => {

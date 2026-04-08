@@ -204,6 +204,8 @@ export function CartSidebar() {
       }
 
       const { orderId, expiresAt } = await res.json();
+      // Stash pre-reservation stock snapshot for checkout display
+      try { sessionStorage.setItem("checkout_stock", JSON.stringify(stockMap)); } catch {}
       router.push(`/checkout?orderId=${orderId}&expiresAt=${encodeURIComponent(expiresAt)}`);
     } catch (err) {
       setError(
