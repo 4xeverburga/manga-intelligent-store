@@ -69,7 +69,7 @@ function CartItemRow({
             >
               {stockInfo.canBeDropshipped && item.quantity > stockInfo.stock
                 ? `${stockInfo.stock} en stock · ${item.quantity - stockInfo.stock} bajo pedido`
-                : `${stockInfo.stock} en stock${stockInfo.canBeDropshipped ? " · Bajo pedido" : ""}`
+                : `${stockInfo.stock} en stock`
               }
             </span>
           </div>
