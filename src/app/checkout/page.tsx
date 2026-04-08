@@ -572,7 +572,9 @@ function CheckoutContent() {
                     className="w-full max-w-xs bg-cta text-cta-foreground hover:bg-cta/90"
                     size="lg"
                   >
-                    Pagar S/ {totalPrice.toFixed(2)}
+                    {process.env.NEXT_PUBLIC_APP_ENVIRONMENT === "DEV"
+                      ? `Simular Pagar S/ ${totalPrice.toFixed(2)}`
+                      : `Pagar S/ ${totalPrice.toFixed(2)}`}
                   </Button>
                 )}
 
@@ -589,10 +591,17 @@ function CheckoutContent() {
               </>
             )}
 
-            <p className="mt-3 text-center text-[10px] text-muted-foreground">
-              Tarjeta de prueba: 4474 1100 0000 0004 &middot; Exp: 12/25 &middot;
-              CVV: 111
-            </p>
+            {process.env.NEXT_PUBLIC_APP_ENVIRONMENT === "DEV" && (
+              <>
+                <p className="mt-3 text-center text-[11px] font-medium text-amber-500">
+                  Entorno de desarrollo — No se realizará un cobro real
+                </p>
+                <p className="mt-1 text-center text-[10px] text-muted-foreground">
+                  Tarjeta de prueba: 4474 1100 0000 0004 &middot; Exp: 12/25
+                  &middot; CVV: 111
+                </p>
+              </>
+            )}
           </div>
         </div>
       </div>
