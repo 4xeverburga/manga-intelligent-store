@@ -1,12 +1,15 @@
-import { streamText, tool, stepCountIs, convertToModelMessages } from "ai";
+import { streamText, stepCountIs, convertToModelMessages } from "ai";
 import { google } from "@ai-sdk/google";
-import { z } from "zod";
 import { SupabaseMangaRepository } from "@/infrastructure/db/DrizzleMangaRepository";
 import { GeminiAdapter } from "@/infrastructure/ai/GeminiAdapter";
 import { SemanticSearchMangas } from "@/core/application/use-cases/SemanticSearchMangas";
-import { SYSTEM_PROMPT } from "@/infrastructure/ai/prompts";
-import { supabase } from "@/infrastructure/db/client";
+import { buildSystemPrompt } from "./buildSystemPrompt";
+import { searchMangaTool } from "./tools/searchManga";
+import { getRecommendationsTool } from "./tools/getRecommendations";
+import { checkVolumeAvailabilityTool } from "./tools/checkVolumeAvailability";
+import { addVolumeToCartTool } from "./tools/addVolumeToCart";
 
+// Shared instances (module-level — constructed once per cold start)
 const mangaRepo = new SupabaseMangaRepository();
 const ai = new GeminiAdapter();
 const semanticSearch = new SemanticSearchMangas(mangaRepo, ai);
@@ -15,274 +18,22 @@ export async function POST(req: Request) {
   const { messages: uiMessages, profileContext } = await req.json();
   const allMessages = await convertToModelMessages(uiMessages);
 
-  // Keep only the last N model messages to stay within context limits
+  // Trim history to avoid exceeding the model's context window
   const maxCtx = Number(process.env.CHAT_MAX_CONTEXT_MESSAGES) || 30;
-  const messages = allMessages.length > maxCtx
-    ? allMessages.slice(-maxCtx)
-    : allMessages;
-
-  let system = SYSTEM_PROMPT;
-  if (profileContext) {
-    const platformSections = (profileContext.platforms ?? []).map(
-      (p: { username: string; platform: string; rawData?: Record<string, unknown> }) => {
-        const label = p.platform === "mal" ? "MyAnimeList" : "Reddit";
-        let section = `### ${p.username} (${label})`;
-        if (p.rawData) {
-          const rd = p.rawData;
-          if (rd.favoriteManga && (rd.favoriteManga as string[]).length > 0)
-            section += `\n- Manga favoritos: ${(rd.favoriteManga as string[]).join(", ")}`;
-          if (rd.favoriteAnime && (rd.favoriteAnime as string[]).length > 0)
-            section += `\n- Anime favoritos: ${(rd.favoriteAnime as string[]).join(", ")}`;
-          if (rd.mangaList && (rd.mangaList as string[]).length > 0)
-            section += `\n- Lista de manga: ${(rd.mangaList as string[]).join(", ")}`;
-          if (rd.animeList && (rd.animeList as string[]).length > 0)
-            section += `\n- Lista de anime: ${(rd.animeList as string[]).join(", ")}`;
-          // Legacy fields (in case of cached profiles)
-          if (rd.readingManga && (rd.readingManga as string[]).length > 0)
-            section += `\n- Leyendo ahora: ${(rd.readingManga as string[]).join(", ")}`;
-          if (rd.watchingAnime && (rd.watchingAnime as string[]).length > 0)
-            section += `\n- Viendo ahora: ${(rd.watchingAnime as string[]).join(", ")}`;
-          if (rd.stats) {
-            const s = rd.stats as Record<string, Record<string, number>>;
-            if (s.anime?.total_entries > 0)
-              section += `\n- Estadísticas anime: ${s.anime.total_entries} títulos, score promedio ${s.anime.mean_score}`;
-            if (s.manga?.total_entries > 0)
-              section += `\n- Estadísticas manga: ${s.manga.total_entries} títulos, score promedio ${s.manga.mean_score}`;
-          }
-          if (rd.listsPrivate)
-            section += `\n- ⚠️ Listas configuradas como privadas en MAL (datos limitados)`;
-          if (rd.subreddits && (rd.subreddits as string[]).length > 0)
-            section += `\n- Subreddits activos: ${(rd.subreddits as string[]).join(", ")}`;
-          if (rd.mangaSubreddits && (rd.mangaSubreddits as string[]).length > 0)
-            section += `\n- Subreddits manga/anime: ${(rd.mangaSubreddits as string[]).join(", ")}`;
-          if (rd.mangaPostTitles && (rd.mangaPostTitles as string[]).length > 0)
-            section += `\n- Posts recientes sobre manga: ${(rd.mangaPostTitles as string[]).join("; ")}`;
-        }
-        return section;
-      }
-    );
-    const tags = (profileContext.interestTags ?? []).join(", ");
-    const genres = (profileContext.favoriteGenres ?? []).join(", ");
-
-    system += `\n\n## Perfil del usuario\n${platformSections.join("\n\n")}`;
-
-    system += `\n\n### Resumen general`;
-    if (tags || genres) {
-      if (tags) system += `\n- Intereses IA: ${tags}`;
-      if (genres) system += `\n- Géneros favoritos: ${genres}`;
-    } else {
-      system += `\n- No se pudo extraer preferencias en base a los datos de los perfiles. Basa tus recomendaciones en lo que el usuario te pida durante la conversación.`;
-    }
-
-    system += `\n\nIMPORTANTE: Ya tienes los datos del usuario. NO le preguntes qué géneros le gustan ni cuál es su manga favorito — ya lo sabes por sus perfiles. Usa esta información directamente para personalizar recomendaciones. Cuando el usuario pregunte qué sabes de su perfil, responde con datos CONCRETOS: títulos específicos, subreddits, animes, etc. Si un campo dice "No disponible", no lo menciones.`;
-  }
+  const messages =
+    allMessages.length > maxCtx ? allMessages.slice(-maxCtx) : allMessages;
 
   const result = streamText({
     model: google(process.env.GEMINI_MODEL || "gemini-2.0-flash"),
-    system,
+    system: buildSystemPrompt(profileContext),
     messages,
     tools: {
-      search_manga: tool({
-        description:
-          "Busca mangas similares en la base de datos usando búsqueda semántica. Úsala SIEMPRE antes de recomendar.",
-        inputSchema: z.object({
-          query: z
-            .string()
-            .describe(
-              "Descripción, título o géneros del manga que busca el usuario"
-            ),
-        }),
-        execute: async ({ query }) => {
-          const results = await semanticSearch.execute({
-            query,
-            threshold: 0.35,
-            limit: 8,
-          });
-          return results.map((r) => ({
-            id: r.id,
-            title: r.title,
-            synopsis: r.synopsis.slice(0, 200),
-            genres: r.genres,
-            score: r.score,
-            imageUrl: r.imageUrl,
-            similarity: r.similarity,
-          }));
-        },
-      }),
-
-      get_recommendations: tool({
-        description:
-          "Obtiene recomendaciones personalizadas basadas en géneros, mood o un manga similar.",
-        inputSchema: z.object({
-          genres: z
-            .array(z.string())
-            .optional()
-            .describe("Lista de géneros deseados"),
-          mood: z
-            .string()
-            .optional()
-            .describe("Estado de ánimo o tipo de historia deseada"),
-          similarTo: z
-            .string()
-            .optional()
-            .describe("Nombre de un manga para buscar similares"),
-        }),
-        execute: async ({ genres, mood, similarTo }) => {
-          const parts: string[] = [];
-          if (genres?.length) parts.push(`Genres: ${genres.join(", ")}`);
-          if (mood) parts.push(`Mood: ${mood}`);
-          if (similarTo) parts.push(`Similar to: ${similarTo}`);
-          const query = parts.join(". ") || "popular manga recommendations";
-
-          const results = await semanticSearch.execute({
-            query,
-            threshold: 0.3,
-            limit: 6,
-          });
-          return results.map((r) => ({
-            id: r.id,
-            title: r.title,
-            synopsis: r.synopsis.slice(0, 200),
-            genres: r.genres,
-            score: r.score,
-            imageUrl: r.imageUrl,
-            similarity: r.similarity,
-          }));
-        },
-      }),
-
-      check_volume_availability: tool({
-        description:
-          "Verifica si uno o más volúmenes de un manga están disponibles (en stock o bajo pedido). Úsala cuando el usuario pregunte si un volumen específico o rango de volúmenes está disponible antes de agregar al carrito.",
-        inputSchema: z.object({
-          mangaId: z.string().describe("El ID del manga"),
-          volumeFrom: z
-            .number()
-            .int()
-            .min(1)
-            .describe("Número de volumen inicial (inclusive)"),
-          volumeTo: z
-            .number()
-            .int()
-            .min(1)
-            .optional()
-            .describe(
-              "Número de volumen final (inclusive). Omitir para consultar solo un volumen."
-            ),
-        }),
-        execute: async ({ mangaId, volumeFrom, volumeTo }) => {
-          const to = volumeTo ?? volumeFrom;
-          const { data, error } = await supabase
-            .from("manga_volumes")
-            .select(
-              "id, volume_number, title, cover_url, price, inventory(stock, can_be_dropshipped)"
-            )
-            .eq("manga_id", mangaId)
-            .gte("volume_number", volumeFrom)
-            .lte("volume_number", to)
-            .order("volume_number", { ascending: true });
-
-          if (error || !data?.length) {
-            return {
-              found: false,
-              message: `No se encontraron volúmenes ${volumeFrom}${to !== volumeFrom ? `–${to}` : ""} para este manga.`,
-              volumes: [],
-            };
-          }
-
-          type VolumeRow = {
-            id: string;
-            volume_number: number | null;
-            title: string;
-            cover_url: string | null;
-            price: number;
-            inventory: { stock: number; can_be_dropshipped: boolean } | { stock: number; can_be_dropshipped: boolean }[] | null;
-          };
-
-          const volumes = (data as VolumeRow[]).map((v) => {
-            const inv = Array.isArray(v.inventory) ? v.inventory[0] : v.inventory;
-            const stock = inv?.stock ?? 0;
-            const canBeDropshipped = inv?.can_be_dropshipped ?? false;
-            return {
-              volumeId: v.id,
-              volumeNumber: v.volume_number,
-              title: v.title,
-              imageUrl: v.cover_url,
-              price: v.price,
-              stock,
-              canBeDropshipped,
-              available: stock > 0 || canBeDropshipped,
-            };
-          });
-
-          return { found: true, volumes };
-        },
-      }),
-
-      add_volume_to_cart: tool({
-        description:
-          "Agrega un volumen específico de un manga al carrito del usuario. Úsala solo cuando el usuario confirme que quiere un volumen concreto. Primero usa check_volume_availability si no sabes si está disponible.",
-        inputSchema: z.object({
-          mangaId: z.string().describe("El ID del manga"),
-          volumeNumber: z
-            .number()
-            .int()
-            .min(1)
-            .describe("Número del volumen a agregar"),
-        }),
-        execute: async ({ mangaId, volumeNumber }) => {
-          const { data, error } = await supabase
-            .from("manga_volumes")
-            .select(
-              "id, volume_number, title, cover_url, price, inventory(stock, can_be_dropshipped)"
-            )
-            .eq("manga_id", mangaId)
-            .eq("volume_number", volumeNumber)
-            .limit(1)
-            .single();
-
-          if (error || !data) {
-            return {
-              success: false,
-              error: `No se encontró el volumen ${volumeNumber} para este manga.`,
-            };
-          }
-
-          type VolumeRow = {
-            id: string;
-            volume_number: number | null;
-            title: string;
-            cover_url: string | null;
-            price: number;
-            inventory: { stock: number; can_be_dropshipped: boolean } | { stock: number; can_be_dropshipped: boolean }[] | null;
-          };
-
-          const v = data as VolumeRow;
-          const inv = Array.isArray(v.inventory) ? v.inventory[0] : v.inventory;
-          const stock = inv?.stock ?? 0;
-          const canBeDropshipped = inv?.can_be_dropshipped ?? false;
-
-          if (stock === 0 && !canBeDropshipped) {
-            return {
-              success: false,
-              error: `El volumen ${volumeNumber} no tiene stock disponible y no admite pedido.`,
-            };
-          }
-
-          return {
-            success: true,
-            volumeId: v.id,
-            volumeNumber: v.volume_number,
-            title: v.title,
-            imageUrl: v.cover_url ?? undefined,
-            price: v.price,
-            mangaId,
-            stock,
-            canBeDropshipped,
-          };
-        },
-      }),
+      search_manga: searchMangaTool(semanticSearch),
+      get_recommendations: getRecommendationsTool(semanticSearch),
+      check_volume_availability: checkVolumeAvailabilityTool(),
+      add_volume_to_cart: addVolumeToCartTool(),
     },
+    // Allow up to 3 agentic steps (tool call → response → tool call → …)
     stopWhen: stepCountIs(3),
   });
 
