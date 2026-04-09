@@ -110,33 +110,6 @@ export async function POST(req: Request) {
         },
       }),
 
-      add_to_cart: tool({
-        description:
-          "Agrega un manga al carrito del usuario. Solo úsala cuando el usuario confirme que quiere agregarlo.",
-        inputSchema: z.object({
-          mangaId: z.string().describe("El ID del manga a agregar"),
-          title: z.string().describe("El título del manga"),
-          reason: z
-            .string()
-            .optional()
-            .describe("Razón breve de por qué se recomienda"),
-        }),
-        execute: async ({ mangaId, title, reason }) => {
-          const manga = await mangaRepo.findById(mangaId);
-          if (!manga) {
-            return { success: false, error: "Manga not found in database" };
-          }
-
-          return {
-            success: true,
-            mangaId,
-            title,
-            reason,
-            source: "ai-suggested" as const,
-          };
-        },
-      }),
-
       get_recommendations: tool({
         description:
           "Obtiene recomendaciones personalizadas basadas en géneros, mood o un manga similar.",

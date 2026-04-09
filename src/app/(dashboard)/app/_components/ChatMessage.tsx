@@ -3,7 +3,6 @@
 import type { UIMessage } from "@ai-sdk/react";
 import { cn } from "@/lib/utils";
 import { MangaToolResult } from "@/app/(dashboard)/app/_components/MangaToolResult"
-import { AddToCartResult } from "@/app/(dashboard)/app/_components/AddToCartResult"
 import { AddVolumeToCartResult, type AddVolumeResult } from "@/app/(dashboard)/app/_components/AddVolumeToCartResult"
 import { CheckVolumeAvailabilityResult, type CheckVolumeAvailabilityOutput } from "@/app/(dashboard)/app/_components/CheckVolumeAvailabilityResult"
 
@@ -71,14 +70,6 @@ export function ChatMessage({ message }: { message: UIMessage }) {
                   />
                 );
               }
-              if (toolPart.type === "tool-add_to_cart") {
-                return (
-                  <AddToCartResult
-                    key={toolPart.toolCallId}
-                    result={toolPart.output as CartResult}
-                  />
-                );
-              }
               if (toolPart.type === "tool-add_volume_to_cart") {
                 return (
                   <AddVolumeToCartResult
@@ -128,14 +119,6 @@ export interface MangaResult {
   score: number;
   imageUrl: string;
   similarity: number;
-}
-
-export interface CartResult {
-  success: boolean;
-  mangaId?: string;
-  title?: string;
-  reason?: string;
-  error?: string;
 }
 
 function formatMarkdown(text: string): string {
