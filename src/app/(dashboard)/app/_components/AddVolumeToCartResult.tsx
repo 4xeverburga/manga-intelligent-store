@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { CheckCircle, XCircle, Package } from "lucide-react";
+import { CheckCircle, AlertCircle, Package } from "lucide-react";
 import { useCartStore } from "@/stores/cart";
 
 export interface AddVolumeResult {
@@ -45,8 +45,8 @@ export function AddVolumeToCartResult({ result }: { result: AddVolumeResult }) {
 
   if (!result.success) {
     return (
-      <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
-        <XCircle className="h-4 w-4 shrink-0" />
+      <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-400">
+        <AlertCircle className="h-4 w-4 shrink-0" />
         {result.error ?? "No se pudo agregar el volumen al carrito"}
       </div>
     );

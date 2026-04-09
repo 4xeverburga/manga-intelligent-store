@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, XCircle, Package } from "lucide-react";
+import { CheckCircle, AlertCircle, Package } from "lucide-react";
 
 interface VolumeAvailability {
   volumeId: string;
@@ -26,8 +26,8 @@ export function CheckVolumeAvailabilityResult({
 }) {
   if (!result.found || !result.volumes?.length) {
     return (
-      <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-        <XCircle className="h-4 w-4 shrink-0" />
+      <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-400">
+        <AlertCircle className="h-4 w-4 shrink-0" />
         {result.message ?? "No se encontraron volúmenes."}
       </div>
     );
@@ -41,13 +41,13 @@ export function CheckVolumeAvailabilityResult({
           className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${
             v.available
               ? "bg-primary/10 text-primary"
-              : "bg-destructive/10 text-destructive"
+              : "bg-amber-500/10 text-amber-400"
           }`}
         >
           {v.available ? (
             <CheckCircle className="h-4 w-4 shrink-0" />
           ) : (
-            <XCircle className="h-4 w-4 shrink-0" />
+            <AlertCircle className="h-4 w-4 shrink-0" />
           )}
           <span className="font-medium">
             Vol. {v.volumeNumber} — {v.title}
