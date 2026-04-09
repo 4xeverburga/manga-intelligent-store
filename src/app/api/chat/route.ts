@@ -9,6 +9,8 @@ import { getRecommendationsTool } from "./tools/getRecommendations";
 import { checkVolumeAvailabilityTool } from "./tools/checkVolumeAvailability";
 import { addVolumeToCartTool } from "./tools/addVolumeToCart";
 
+const isDev = process.env.NEXT_PUBLIC_APP_ENVIRONMENT === "DEV";
+
 // Shared instances (module-level — constructed once per cold start)
 const mangaRepo = new SupabaseMangaRepository();
 const ai = new GeminiAdapter();
@@ -35,6 +37,24 @@ export async function POST(req: Request) {
     },
     // Allow up to 3 agentic steps (tool call → response → tool call → …)
     stopWhen: stepCountIs(3),
+    onStepFinish: isDev
+      ? ({ toolCalls, toolResults, text, stepNumber }) => {
+          if (toolCalls?.length) {
+            console.log(`[chat] step=${stepNumber} tools=${toolCalls.map((t) => t.toolName).join(", ")}`);
+            for (const tc of toolCalls) {
+              console.log(`  → ${tc.toolName}`, JSON.stringify(tc.input));
+            }
+          }
+          if (toolResults?.length) {
+            for (const tr of toolResults) {
+              console.log(`  ← ${tr.toolName}`, JSON.stringify(tr.output).slice(0, 300));
+            }
+          }
+          if (text) {
+            console.log(`[chat] text (${text.length} chars)`);
+          }
+        }
+      : undefined,
   });
 
   return result.toUIMessageStreamResponse();
