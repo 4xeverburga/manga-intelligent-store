@@ -102,7 +102,7 @@ function CartItemRow({
         </div>
         {stockInfo && !stockInfo.canBeDropshipped && item.quantity >= stockInfo.stock && (
           <p className="mt-0.5 text-[10px] text-amber-500">
-            Haz llegado al límite del stock.
+            Llegaste al límite del stock.
           </p>
         )}
       </div>
