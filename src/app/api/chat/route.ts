@@ -5,6 +5,7 @@ import { SupabaseMangaRepository } from "@/infrastructure/db/DrizzleMangaReposit
 import { GeminiAdapter } from "@/infrastructure/ai/GeminiAdapter";
 import { SemanticSearchMangas } from "@/core/application/use-cases/SemanticSearchMangas";
 import { SYSTEM_PROMPT } from "@/infrastructure/ai/prompts";
+import { supabase } from "@/infrastructure/db/client";
 
 const mangaRepo = new SupabaseMangaRepository();
 const ai = new GeminiAdapter();
@@ -174,6 +175,138 @@ export async function POST(req: Request) {
             imageUrl: r.imageUrl,
             similarity: r.similarity,
           }));
+        },
+      }),
+
+      check_volume_availability: tool({
+        description:
+          "Verifica si uno o más volúmenes de un manga están disponibles (en stock o bajo pedido). Úsala cuando el usuario pregunte si un volumen específico o rango de volúmenes está disponible antes de agregar al carrito.",
+        inputSchema: z.object({
+          mangaId: z.string().describe("El ID del manga"),
+          volumeFrom: z
+            .number()
+            .int()
+            .min(1)
+            .describe("Número de volumen inicial (inclusive)"),
+          volumeTo: z
+            .number()
+            .int()
+            .min(1)
+            .optional()
+            .describe(
+              "Número de volumen final (inclusive). Omitir para consultar solo un volumen."
+            ),
+        }),
+        execute: async ({ mangaId, volumeFrom, volumeTo }) => {
+          const to = volumeTo ?? volumeFrom;
+          const { data, error } = await supabase
+            .from("manga_volumes")
+            .select(
+              "id, volume_number, title, cover_url, price, inventory(stock, can_be_dropshipped)"
+            )
+            .eq("manga_id", mangaId)
+            .gte("volume_number", volumeFrom)
+            .lte("volume_number", to)
+            .order("volume_number", { ascending: true });
+
+          if (error || !data?.length) {
+            return {
+              found: false,
+              message: `No se encontraron volúmenes ${volumeFrom}${to !== volumeFrom ? `–${to}` : ""} para este manga.`,
+              volumes: [],
+            };
+          }
+
+          type VolumeRow = {
+            id: string;
+            volume_number: number | null;
+            title: string;
+            cover_url: string | null;
+            price: number;
+            inventory: { stock: number; can_be_dropshipped: boolean } | { stock: number; can_be_dropshipped: boolean }[] | null;
+          };
+
+          const volumes = (data as VolumeRow[]).map((v) => {
+            const inv = Array.isArray(v.inventory) ? v.inventory[0] : v.inventory;
+            const stock = inv?.stock ?? 0;
+            const canBeDropshipped = inv?.can_be_dropshipped ?? false;
+            return {
+              volumeId: v.id,
+              volumeNumber: v.volume_number,
+              title: v.title,
+              imageUrl: v.cover_url,
+              price: v.price,
+              stock,
+              canBeDropshipped,
+              available: stock > 0 || canBeDropshipped,
+            };
+          });
+
+          return { found: true, volumes };
+        },
+      }),
+
+      add_volume_to_cart: tool({
+        description:
+          "Agrega un volumen específico de un manga al carrito del usuario. Úsala solo cuando el usuario confirme que quiere un volumen concreto. Primero usa check_volume_availability si no sabes si está disponible.",
+        inputSchema: z.object({
+          mangaId: z.string().describe("El ID del manga"),
+          volumeNumber: z
+            .number()
+            .int()
+            .min(1)
+            .describe("Número del volumen a agregar"),
+        }),
+        execute: async ({ mangaId, volumeNumber }) => {
+          const { data, error } = await supabase
+            .from("manga_volumes")
+            .select(
+              "id, volume_number, title, cover_url, price, inventory(stock, can_be_dropshipped)"
+            )
+            .eq("manga_id", mangaId)
+            .eq("volume_number", volumeNumber)
+            .limit(1)
+            .single();
+
+          if (error || !data) {
+            return {
+              success: false,
+              error: `No se encontró el volumen ${volumeNumber} para este manga.`,
+            };
+          }
+
+          type VolumeRow = {
+            id: string;
+            volume_number: number | null;
+            title: string;
+            cover_url: string | null;
+            price: number;
+            inventory: { stock: number; can_be_dropshipped: boolean } | { stock: number; can_be_dropshipped: boolean }[] | null;
+          };
+
+          const v = data as VolumeRow;
+          const inv = Array.isArray(v.inventory) ? v.inventory[0] : v.inventory;
+          const stock = inv?.stock ?? 0;
+          const canBeDropshipped = inv?.can_be_dropshipped ?? false;
+
+          if (stock === 0 && !canBeDropshipped) {
+            return {
+              success: false,
+              error: `El volumen ${volumeNumber} no tiene stock disponible y no admite pedido.`,
+            };
+          }
+
+          return {
+            success: true,
+            volumeId: v.id,
+            volumeNumber: v.volume_number,
+            title: v.title,
+            imageUrl: v.cover_url ?? undefined,
+            price: v.price,
+            mangaId,
+            stock,
+            canBeDropshipped,
+          };
         },
       }),
     },

@@ -4,6 +4,8 @@ import type { UIMessage } from "@ai-sdk/react";
 import { cn } from "@/lib/utils";
 import { MangaToolResult } from "@/app/(dashboard)/app/_components/MangaToolResult"
 import { AddToCartResult } from "@/app/(dashboard)/app/_components/AddToCartResult"
+import { AddVolumeToCartResult, type AddVolumeResult } from "@/app/(dashboard)/app/_components/AddVolumeToCartResult"
+import { CheckVolumeAvailabilityResult, type CheckVolumeAvailabilityOutput } from "@/app/(dashboard)/app/_components/CheckVolumeAvailabilityResult"
 
 export function ChatMessage({ message }: { message: UIMessage }) {
   const isUser = message.role === "user";
@@ -74,6 +76,22 @@ export function ChatMessage({ message }: { message: UIMessage }) {
                   <AddToCartResult
                     key={toolPart.toolCallId}
                     result={toolPart.output as CartResult}
+                  />
+                );
+              }
+              if (toolPart.type === "tool-add_volume_to_cart") {
+                return (
+                  <AddVolumeToCartResult
+                    key={toolPart.toolCallId}
+                    result={toolPart.output as AddVolumeResult}
+                  />
+                );
+              }
+              if (toolPart.type === "tool-check_volume_availability") {
+                return (
+                  <CheckVolumeAvailabilityResult
+                    key={toolPart.toolCallId}
+                    result={toolPart.output as CheckVolumeAvailabilityOutput}
                   />
                 );
               }
