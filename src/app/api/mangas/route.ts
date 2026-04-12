@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SupabaseMangaRepository } from "@/infrastructure/db/DrizzleMangaRepository";
 import { SearchMangas } from "@/core/application/use-cases/SearchMangas";
+import { supabase } from "@/infrastructure/db/client";
 
 const searchMangas = new SearchMangas(new SupabaseMangaRepository());
 
 export async function GET(req: NextRequest) {
+  // Temporary debug: raw Supabase query to isolate the issue
+  const { data: rawTest, error: rawError } = await supabase
+    .from("mangas")
+    .select("id")
+    .limit(1);
+  console.log("[mangas/route] DEBUG supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL?.slice(0, 30));
+  console.log("[mangas/route] DEBUG service key prefix:", process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 15));
+  console.log("[mangas/route] DEBUG raw test:", { data: rawTest, error: rawError });
+
   const { searchParams } = req.nextUrl;
   const page = Number(searchParams.get("page") ?? 1);
   const limit = Number(searchParams.get("limit") ?? 24);

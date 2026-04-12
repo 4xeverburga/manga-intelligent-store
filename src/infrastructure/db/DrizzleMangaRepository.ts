@@ -116,10 +116,13 @@ export class SupabaseMangaRepository implements IMangaRepository {
       dataQuery = dataQuery.ilike("title", `%${search}%`);
     }
 
-    const [{ count: total }, { data }] = await Promise.all([
+    const [{ count: total, error: countError }, { data, error: dataError }] = await Promise.all([
       countQuery,
       dataQuery,
     ]);
+
+    if (countError) console.error("[searchPaginated] count error:", countError);
+    if (dataError) console.error("[searchPaginated] data error:", dataError);
 
     return {
       data: (data ?? []).map((r) => this.toDomain(r as MangaRow)),
