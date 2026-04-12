@@ -56,12 +56,20 @@ async function resolveMangaByTitle(
 export function addVolumeToCartTool() {
   return tool({
     description:
-      "Agrega un volumen específico de un manga al carrito del usuario. Acepta el nombre del manga — no necesitas el ID. Llama check_volume_availability primero si no sabes si está disponible.",
+      "Agrega un volumen específico de un manga al carrito del usuario. Acepta el nombre del manga — no necesitas el ID. Puedes indicar la cantidad de ejemplares; si supera el stock se ajusta al máximo disponible. Llama check_volume_availability primero si no sabes si está disponible.",
     inputSchema: z.object({
       mangaTitle: z.string().describe("Nombre (o parte del nombre) del manga"),
       volumeNumber: z.number().int().min(1).describe("Número del volumen a agregar"),
+      quantity: z
+        .number()
+        .int()
+        .min(1)
+        .optional()
+        .describe(
+          "Cantidad de ejemplares a agregar (por defecto 1). Si supera el stock disponible se ajusta automáticamente al máximo posible."
+        ),
     }),
-    execute: async ({ mangaTitle, volumeNumber }) => {
+    execute: async ({ mangaTitle, volumeNumber, quantity: rawQty = 1 }) => {
       const resolved = await resolveMangaByTitle(mangaTitle);
 
       if (!resolved.manga) {
@@ -106,6 +114,12 @@ export function addVolumeToCartTool() {
         };
       }
 
+      // Clamp quantity to available stock when the item cannot be dropshipped
+      const requestedQuantity = Math.max(1, rawQty);
+      const quantity = canBeDropshipped
+        ? requestedQuantity
+        : Math.min(requestedQuantity, stock);
+
       return {
         success: true,
         volumeId: v.id,
@@ -116,6 +130,8 @@ export function addVolumeToCartTool() {
         mangaId: manga.id,
         stock,
         canBeDropshipped,
+        quantity,
+        requestedQuantity,
       };
     },
   });

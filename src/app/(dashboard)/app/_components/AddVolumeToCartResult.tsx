@@ -14,11 +14,21 @@ export interface AddVolumeResult {
   mangaId?: string;
   stock?: number;
   canBeDropshipped?: boolean;
+  quantity?: number;
+  requestedQuantity?: number;
   error?: string;
 }
 
 export function AddVolumeToCartResult({ result }: { result: AddVolumeResult }) {
   const addItem = useCartStore((s) => s.addItem);
+  const updateQuantity = useCartStore((s) => s.updateQuantity);
+  const items = useCartStore((s) => s.items);
+
+  const qty = result.quantity ?? 1;
+  const wasClamped =
+    result.requestedQuantity != null &&
+    result.quantity != null &&
+    result.requestedQuantity > result.quantity;
 
   useEffect(() => {
     if (
@@ -28,16 +38,22 @@ export function AddVolumeToCartResult({ result }: { result: AddVolumeResult }) {
       result.title &&
       result.price != null
     ) {
-      addItem({
-        mangaId: result.mangaId,
-        volumeId: result.volumeId,
-        title: result.title,
-        imageUrl: result.imageUrl,
-        price: result.price,
-        quantity: 1,
-        source: "ai-suggested",
-        addedAt: new Date(),
-      });
+      const existing = items.find((i) => i.volumeId === result.volumeId);
+      if (existing) {
+        // Item already in cart — update its quantity instead of silently skipping
+        updateQuantity(result.volumeId, qty, "ai");
+      } else {
+        addItem({
+          mangaId: result.mangaId,
+          volumeId: result.volumeId,
+          title: result.title,
+          imageUrl: result.imageUrl,
+          price: result.price,
+          quantity: qty,
+          source: "ai-suggested",
+          addedAt: new Date(),
+        });
+      }
     }
     // Only run once when the result arrives
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -63,7 +79,14 @@ export function AddVolumeToCartResult({ result }: { result: AddVolumeResult }) {
     <div className="flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary">
       <CheckCircle className="h-4 w-4 shrink-0" />
       <span>
-        <strong>{result.title}</strong> agregado al carrito como sugerencia.
+        <strong>{result.title}</strong>
+        {qty > 1 ? ` (×${qty})` : ""} agregado al carrito como sugerencia.
+        {wasClamped && (
+          <span className="text-muted-foreground">
+            {" "}
+            (Pediste {result.requestedQuantity}, pero solo hay {result.quantity} disponibles)
+          </span>
+        )}
         {stockLabel && (
           <>
             {" "}
