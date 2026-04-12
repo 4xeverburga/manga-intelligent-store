@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import {
   User,
@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { useProfileStore } from "@/stores/profile";
 import type { UserInsight, PlatformType } from "@/core/domain/entities/UserInsight";
@@ -108,22 +107,51 @@ function ProfileCard({ profile }: { profile: UserInsight }) {
 }
 
 export function InsightsSidebar() {
-  const { profiles, loadingPlatform, error, connectProfile } =
-    useProfileStore();
+  const {
+    profiles,
+    loadingPlatform,
+    error,
+    connectProfile,
+    connectMALOAuth,
+    fetchMALOAuthProfile,
+  } = useProfileStore();
   const connectedList = Object.values(profiles);
-  const unconnected = PLATFORMS.filter((p) => !profiles[p.id]);
+  const malConnected = !!profiles.mal;
+  const redditConnected = !!profiles.reddit;
 
-  const [showForm, setShowForm] = useState(false);
-  const [username, setUsername] = useState("");
-  const [platform, setPlatform] = useState<PlatformType>(
-    unconnected[0]?.id ?? "mal"
-  );
+  const [showRedditForm, setShowRedditForm] = useState(false);
+  const [redditUsername, setRedditUsername] = useState("");
+  const oauthHandled = useRef(false);
 
-  const handleConnect = () => {
-    if (!username.trim()) return;
-    connectProfile(username.trim(), platform);
-    setUsername("");
-    setShowForm(false);
+  // Detect ?mal_connected=1 after OAuth redirect
+  useEffect(() => {
+    if (oauthHandled.current) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("mal_connected") === "1") {
+      oauthHandled.current = true;
+      // Clean URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete("mal_connected");
+      window.history.replaceState({}, "", url.pathname + url.search);
+      fetchMALOAuthProfile();
+    }
+    if (params.get("mal_error")) {
+      oauthHandled.current = true;
+      const errorCode = params.get("mal_error");
+      const url = new URL(window.location.href);
+      url.searchParams.delete("mal_error");
+      window.history.replaceState({}, "", url.pathname + url.search);
+      useProfileStore.setState({
+        error: `Error al conectar MAL: ${errorCode}`,
+      });
+    }
+  }, [fetchMALOAuthProfile]);
+
+  const handleRedditConnect = () => {
+    if (!redditUsername.trim()) return;
+    connectProfile(redditUsername.trim(), "reddit");
+    setRedditUsername("");
+    setShowRedditForm(false);
   };
 
   return (
@@ -161,36 +189,38 @@ export function InsightsSidebar() {
             <p className="text-center text-xs text-destructive">{error}</p>
           )}
 
-          {/* Add new connection form */}
-          {unconnected.length > 0 && (
+          {/* MAL OAuth button */}
+          {!malConnected && !loadingPlatform && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full border-dashed"
+              onClick={connectMALOAuth}
+            >
+              <ExternalLink className="mr-1.5 size-3" />
+              Conectar con MyAnimeList
+            </Button>
+          )}
+
+          {/* Reddit username form */}
+          {!redditConnected && !loadingPlatform && (
             <>
-              {showForm ? (
+              {showRedditForm ? (
                 <div className="space-y-2 rounded-lg border border-dashed border-border/60 p-3">
                   <Input
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Tu username..."
+                    value={redditUsername}
+                    onChange={(e) => setRedditUsername(e.target.value)}
+                    placeholder="Tu username de Reddit..."
                     className="text-sm"
                     autoFocus
-                    onKeyDown={(e) => e.key === "Enter" && handleConnect()}
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && handleRedditConnect()
+                    }
                   />
-                  <div className="flex gap-1.5">
-                    {unconnected.map((p) => (
-                      <Button
-                        key={p.id}
-                        variant={platform === p.id ? "default" : "outline"}
-                        size="sm"
-                        className="flex-1 text-xs"
-                        onClick={() => setPlatform(p.id)}
-                      >
-                        {p.label}
-                      </Button>
-                    ))}
-                  </div>
                   <div className="flex gap-2">
                     <Button
-                      onClick={handleConnect}
-                      disabled={!username.trim() || !!loadingPlatform}
+                      onClick={handleRedditConnect}
+                      disabled={!redditUsername.trim() || !!loadingPlatform}
                       size="sm"
                       className="flex-1"
                     >
@@ -200,7 +230,7 @@ export function InsightsSidebar() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setShowForm(false)}
+                      onClick={() => setShowRedditForm(false)}
                     >
                       Cancelar
                     </Button>
@@ -211,30 +241,28 @@ export function InsightsSidebar() {
                   variant="outline"
                   size="sm"
                   className="w-full border-dashed"
-                  onClick={() => {
-                    setPlatform(unconnected[0].id);
-                    setShowForm(true);
-                  }}
+                  onClick={() => setShowRedditForm(true)}
                 >
                   <Plus className="mr-1.5 size-3" />
-                  Conectar{" "}
-                  {connectedList.length > 0 ? "otra cuenta" : "perfil"}
+                  Conectar Reddit
                 </Button>
               )}
             </>
           )}
 
           {/* Empty state */}
-          {connectedList.length === 0 && !showForm && !loadingPlatform && (
-            <div className="flex flex-col items-center gap-2 py-6 text-center">
-              <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-                <User className="size-7 opacity-30" />
+          {connectedList.length === 0 &&
+            !showRedditForm &&
+            !loadingPlatform && (
+              <div className="flex flex-col items-center gap-2 py-6 text-center">
+                <div className="flex size-14 items-center justify-center rounded-full bg-muted">
+                  <User className="size-7 opacity-30" />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Vincula tus cuentas para recomendaciones personalizadas
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Vincula tus cuentas para recomendaciones personalizadas
-              </p>
-            </div>
-          )}
+            )}
         </div>
       </div>
     </div>

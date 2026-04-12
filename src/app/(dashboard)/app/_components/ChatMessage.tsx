@@ -3,7 +3,10 @@
 import type { UIMessage } from "@ai-sdk/react";
 import { cn } from "@/lib/utils";
 import { MangaToolResult } from "@/app/(dashboard)/app/_components/MangaToolResult"
-import { AddToCartResult } from "@/app/(dashboard)/app/_components/AddToCartResult"
+import { AddVolumeToCartResult, type AddVolumeResult } from "@/app/(dashboard)/app/_components/AddVolumeToCartResult"
+import { CheckVolumeAvailabilityResult, type CheckVolumeAvailabilityOutput } from "@/app/(dashboard)/app/_components/CheckVolumeAvailabilityResult"
+
+const isDev = process.env.NEXT_PUBLIC_APP_ENVIRONMENT === "DEV";
 
 export function ChatMessage({ message }: { message: UIMessage }) {
   const isUser = message.role === "user";
@@ -69,11 +72,19 @@ export function ChatMessage({ message }: { message: UIMessage }) {
                   />
                 );
               }
-              if (toolPart.type === "tool-add_to_cart") {
+              if (toolPart.type === "tool-add_volume_to_cart") {
                 return (
-                  <AddToCartResult
+                  <AddVolumeToCartResult
                     key={toolPart.toolCallId}
-                    result={toolPart.output as CartResult}
+                    result={toolPart.output as AddVolumeResult}
+                  />
+                );
+              }
+              if (toolPart.type === "tool-check_volume_availability") {
+                return (
+                  <CheckVolumeAvailabilityResult
+                    key={toolPart.toolCallId}
+                    result={toolPart.output as CheckVolumeAvailabilityOutput}
                   />
                 );
               }
@@ -83,6 +94,8 @@ export function ChatMessage({ message }: { message: UIMessage }) {
               toolPart.state === "input-streaming" ||
               toolPart.state === "input-available"
             ) {
+              // Only show tool-in-progress indicators in dev mode
+              if (!isDev) return null;
               return (
                 <div
                   key={toolPart.toolCallId}
@@ -110,14 +123,6 @@ export interface MangaResult {
   score: number;
   imageUrl: string;
   similarity: number;
-}
-
-export interface CartResult {
-  success: boolean;
-  mangaId?: string;
-  title?: string;
-  reason?: string;
-  error?: string;
 }
 
 function formatMarkdown(text: string): string {

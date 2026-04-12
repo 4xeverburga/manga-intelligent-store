@@ -48,19 +48,36 @@ export class SupabaseOrderService implements IOrderService {
   }
 
   async reserveStock(
-    items: OrderItem[],
-    ttlSeconds = 180
+    items: Pick<OrderItem, "volumeId" | "title" | "quantity">[],
+    ttlSeconds = Number(process.env.NEXT_PUBLIC_RESERVATION_TTL_SECONDS) || 300
   ): Promise<ReservationResult> {
-    const totalAmount = items.reduce(
+    // Look up authoritative prices from DB — never trust client
+    const volumeIds = items.map((i) => i.volumeId);
+    const { data: priceRows } = await supabase
+      .from("manga_volumes")
+      .select("id, price")
+      .in("id", volumeIds);
+
+    const priceMap = new Map(
+      (priceRows ?? []).map((r) => [r.id as string, r.price as number])
+    );
+
+    const pricedItems = items.map((i) => {
+      const price = priceMap.get(i.volumeId);
+      if (price == null) throw new Error(`Volume ${i.volumeId} not found`);
+      return { ...i, unitPrice: price };
+    });
+
+    const totalAmount = pricedItems.reduce(
       (acc, i) => acc + i.quantity * i.unitPrice,
       0
     );
-    const itemCount = items.reduce((acc, i) => acc + i.quantity, 0);
+    const itemCount = pricedItems.reduce((acc, i) => acc + i.quantity, 0);
 
     const { data, error } = await supabase.rpc("reserve_stock", {
       p_total_amount: totalAmount,
       p_item_count: itemCount,
-      p_items: items.map((i) => ({
+      p_items: pricedItems.map((i) => ({
         volume_id: i.volumeId,
         title: i.title,
         quantity: i.quantity,
@@ -72,9 +89,13 @@ export class SupabaseOrderService implements IOrderService {
     if (error) {
       if (
         error.message.includes("stock_non_negative") ||
-        error.message.includes("Insufficient stock")
+        error.message.includes("Insufficient stock") ||
+        error.message.includes("INSUFFICIENT_STOCK")
       ) {
         throw new Error("INSUFFICIENT_STOCK");
+      }
+      if (error.message.includes("DROPSHIP_LIMIT_EXCEEDED")) {
+        throw new Error(error.message);
       }
       throw new Error(`Reservation failed: ${error.message}`);
     }
@@ -107,6 +128,27 @@ export class SupabaseOrderService implements IOrderService {
 
     if (error) {
       throw new Error(`Release failed: ${error.message}`);
+    }
+  }
+
+  async updateDeliveryInfo(
+    orderId: string,
+    info: { email?: string; phone?: string; deliveryAddress?: string }
+  ): Promise<void> {
+    const update: Record<string, string> = {};
+    if (info.email) update.email = info.email;
+    if (info.phone) update.phone = info.phone;
+    if (info.deliveryAddress) update.delivery_address = info.deliveryAddress;
+
+    if (Object.keys(update).length === 0) return;
+
+    const { error } = await supabase
+      .from("orders")
+      .update(update)
+      .eq("id", orderId);
+
+    if (error) {
+      throw new Error(`Update delivery info failed: ${error.message}`);
     }
   }
 }

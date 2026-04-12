@@ -6,42 +6,21 @@
       "idx": 0,
       "version": "7",
       "when": 1775063158342,
-      "tag": "0000_soft_thundra",
+      "tag": "0000_schema",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
       "when": 1775063158343,
-      "tag": "0001_match_mangas_function",
+      "tag": "0001_functions",
       "breakpoints": true
     },
     {
       "idx": 2,
       "version": "7",
-      "when": 1775500413875,
-      "tag": "0002_peaceful_monster_badoon",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1775503039474,
-      "tag": "0003_thankful_big_bertha",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1775506090675,
-      "tag": "0004_typical_kang",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1775507311099,
-      "tag": "0005_reflective_marvel_apes",
+      "when": 1775580000002,
+      "tag": "0002_cron",
       "breakpoints": true
     }
   ]

@@ -7,13 +7,14 @@ interface CartItemPayload {
   volumeId: string;
   title: string;
   quantity: number;
-  unitPrice: number;
 }
 
 export async function POST(req: Request) {
+  let parsedItems: CartItemPayload[] = [];
+
   try {
     const body = await req.json();
-    const { items } = body;
+    const { items, email, phone, deliveryAddress } = body;
 
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -22,7 +23,9 @@ export async function POST(req: Request) {
       );
     }
 
-    for (const item of items as CartItemPayload[]) {
+    parsedItems = items as CartItemPayload[];
+
+    for (const item of parsedItems) {
       if (
         !item.volumeId ||
         !item.title ||
@@ -37,19 +40,66 @@ export async function POST(req: Request) {
     }
 
     const reservation = await orderService.reserveStock(
-      (items as CartItemPayload[]).map((i) => ({
+      parsedItems.map((i) => ({
         volumeId: i.volumeId,
         title: i.title,
         quantity: i.quantity,
-        unitPrice: i.unitPrice ?? 1.0,
       }))
     );
+
+    // Save delivery info on the order
+    if (email || phone || deliveryAddress) {
+      await orderService.updateDeliveryInfo(reservation.orderId, {
+        email: typeof email === "string" ? email : undefined,
+        phone: typeof phone === "string" ? phone : undefined,
+        deliveryAddress:
+          typeof deliveryAddress === "string" ? deliveryAddress : undefined,
+      });
+    }
 
     return NextResponse.json(reservation);
   } catch (error) {
     if (error instanceof Error && error.message === "INSUFFICIENT_STOCK") {
+      const insufficient = await orderService.validateStock(
+        parsedItems.map((i) => ({
+          volumeId: i.volumeId,
+          title: i.title,
+          quantity: i.quantity,
+        }))
+      );
       return NextResponse.json(
-        { error: "Stock insuficiente para uno o más volúmenes" },
+        {
+          error:
+            "Stock insuficiente — es posible que otro usuario haya reservado. Actualiza la página para ver el stock actual.",
+          insufficient,
+        },
+        { status: 409 }
+      );
+    }
+    if (
+      error instanceof Error &&
+      error.message.includes("DROPSHIP_LIMIT_EXCEEDED")
+    ) {
+      // Format: DROPSHIP_LIMIT_EXCEEDED::volume_id::available::requested
+      const parts = error.message.split("::");
+      const volumeId = parts[1];
+      const available = Number(parts[2]) || 0;
+      const requested = Number(parts[3]) || 0;
+      const matchedItem = parsedItems.find((i) => i.volumeId === volumeId);
+      return NextResponse.json(
+        {
+          error:
+            "No se pudo reservar — es posible que otro usuario haya reservado. Actualiza la página para ver el stock actual.",
+          insufficient: [
+            {
+              volumeId,
+              title: matchedItem?.title ?? "Volumen desconocido",
+              requested,
+              available,
+              canBeDropshipped: true,
+            },
+          ],
+        },
         { status: 409 }
       );
     }

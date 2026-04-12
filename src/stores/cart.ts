@@ -7,6 +7,7 @@ interface CartState {
   addItem: (item: CartItem) => void;
   removeItem: (volumeId: string, requestedBy?: "user" | "ai") => void;
   updateQuantity: (volumeId: string, quantity: number, requestedBy?: "user" | "ai") => void;
+  updatePrice: (volumeId: string, price: number) => void;
   approveItem: (volumeId: string) => void;
   clearAISuggestions: () => void;
   clear: () => void;
@@ -44,6 +45,13 @@ export const useCartStore = create<CartState>()(
           }),
         })),
 
+      updatePrice: (volumeId, price) =>
+        set((state) => ({
+          items: state.items.map((i) =>
+            i.volumeId === volumeId && i.price !== price ? { ...i, price } : i
+          ),
+        })),
+
       approveItem: (volumeId) =>
         set((state) => ({
           items: state.items.map((i) =>
@@ -69,7 +77,7 @@ export const selectTotalItems = (state: CartState) =>
   state.items.reduce((acc, i) => acc + i.quantity, 0);
 
 export const selectTotalPrice = (state: CartState) =>
-  state.items.reduce((acc, i) => acc + i.quantity, 0) * 1.0;
+  state.items.reduce((acc, i) => acc + i.quantity * i.price, 0);
 
 export const selectManualItems = (state: CartState) =>
   state.items.filter((i) => i.source === "manual");
