@@ -40,7 +40,7 @@ export function CheckVolumeAvailabilityResult({
           key={v.volumeId}
           className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${
             v.available
-              ? "bg-primary/10 text-primary"
+              ? "bg-neon/10 text-neon"
               : "bg-amber-500/10 text-amber-400"
           }`}
         >

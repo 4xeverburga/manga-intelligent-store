@@ -62,10 +62,10 @@ export function SimilarModal({ mangaId, onClose }: SimilarModalProps) {
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="size-8 animate-spin text-primary" />
+            <Loader2 className="size-8 animate-spin text-neon" />
           </div>
         ) : results.length === 0 ? (
-          <p className="py-8 text-center text-muted-foreground">
+          <p className="py-8 text-center text-[#a1a1aa]">
             No se encontraron mangas similares
           </p>
         ) : (
@@ -75,7 +75,7 @@ export function SimilarModal({ mangaId, onClose }: SimilarModalProps) {
               return (
                 <div
                   key={manga.id}
-                  className="flex gap-3 rounded-lg bg-muted/30 p-3 ring-1 ring-foreground/5"
+                  className="flex gap-3 rounded-lg border border-[#1e2c31] bg-[#02090a] p-3"
                 >
                   <div className="relative size-20 shrink-0 overflow-hidden rounded-md">
                     <Image
@@ -87,13 +87,13 @@ export function SimilarModal({ mangaId, onClose }: SimilarModalProps) {
                     />
                   </div>
                   <div className="flex flex-1 flex-col gap-1 overflow-hidden">
-                    <h4 className="truncate text-sm font-medium">{manga.title}</h4>
+                    <h4 className="truncate text-sm font-medium text-white">{manga.title}</h4>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-emerald-400">
+                      <span className="text-xs text-neon">
                         {similarityPct}% similar
                       </span>
                       {manga.score && (
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-[#71717a]">
                           ★ {manga.score.toFixed(1)}
                         </span>
                       )}
@@ -103,7 +103,7 @@ export function SimilarModal({ mangaId, onClose }: SimilarModalProps) {
                         <Badge
                           key={g}
                           variant="secondary"
-                          className="text-[10px] px-1.5 py-0"
+                          className="text-[10px] px-1.5 py-0 bg-white/10 text-white/70 border-0"
                         >
                           {g}
                         </Badge>

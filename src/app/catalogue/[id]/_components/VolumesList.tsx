@@ -85,16 +85,16 @@ export function VolumesList({
   return (
     <div className="mt-10">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-lg font-semibold text-foreground">
+        <h2 className="text-lg font-medium text-white">
           Volúmenes disponibles ({volumes.length})
         </h2>
         <div className="relative w-full sm:w-64">
-          <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-[#71717a]" />
           <Input
             placeholder="Buscar volumen, ISBN, editorial..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="pl-9 bg-[#061a1c] border-[#1e2c31] text-white placeholder:text-[#71717a] focus:border-neon"
           />
         </div>
       </div>
@@ -117,7 +117,7 @@ export function VolumesList({
       {/* Crossovers */}
       {crossovers.length > 0 && (
         <div className="mt-6">
-          <h3 className="mb-3 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+          <h3 className="mb-3 text-sm font-semibold text-[#71717a] uppercase tracking-wider">
             Crossovers y spin-offs
           </h3>
           <div className="space-y-2">
@@ -135,7 +135,7 @@ export function VolumesList({
       )}
 
       {filtered.length === 0 && (
-        <p className="py-8 text-center text-sm text-muted-foreground">
+        <p className="py-8 text-center text-sm text-[#71717a]">
           No se encontraron volúmenes para &ldquo;{search}&rdquo;
         </p>
       )}
@@ -159,7 +159,7 @@ function VolumeRow({
   const coverSrc = vol.coverUrl ?? mangaImageUrl;
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-border/30 bg-card/60 p-3 transition-colors hover:bg-card">
+    <div className="flex items-center gap-3 rounded-lg border border-[#1e2c31] bg-[#02090a] p-3 transition-colors hover:bg-[#061a1c]">
       <Image
         src={coverSrc}
         alt={vol.title}
@@ -168,10 +168,10 @@ function VolumeRow({
         className="h-14 w-10 shrink-0 rounded object-cover"
       />
       <div className="flex flex-1 flex-col gap-0.5 overflow-hidden">
-        <p className="truncate text-sm font-medium text-foreground">
+        <p className="truncate text-sm font-medium text-white">
           {vol.title}
         </p>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-[#71717a]">
           {vol.editor && <span>{vol.editor}</span>}
           {vol.editionYear && <span>({vol.editionYear})</span>}
           {vol.isbn && (
@@ -186,7 +186,7 @@ function VolumeRow({
       </div>
 
       {/* Price */}
-      <span className="shrink-0 text-sm font-semibold text-foreground">
+      <span className="shrink-0 text-sm font-semibold text-white">
         S/ {vol.price.toFixed(2)}
       </span>
 
@@ -196,7 +196,7 @@ function VolumeRow({
         <div className="text-right">
           <p className={`text-xs font-medium ${avail.color}`}>{avail.label}</p>
           {avail.delivery && (
-            <p className="text-[10px] text-muted-foreground">{avail.delivery}</p>
+            <p className="text-[10px] text-[#71717a]">{avail.delivery}</p>
           )}
         </div>
       </div>

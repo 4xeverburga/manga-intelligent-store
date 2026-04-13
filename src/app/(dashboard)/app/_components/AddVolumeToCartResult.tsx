@@ -76,13 +76,13 @@ export function AddVolumeToCartResult({ result }: { result: AddVolumeResult }) {
       : "";
 
   return (
-    <div className="flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary">
+    <div className="flex items-center gap-2 rounded-lg bg-neon/10 px-3 py-2 text-sm text-neon">
       <CheckCircle className="h-4 w-4 shrink-0" />
       <span>
         <strong>{result.title}</strong>
         {qty > 1 ? ` (×${qty})` : ""} agregado al carrito como sugerencia.
         {wasClamped && (
-          <span className="text-muted-foreground">
+          <span className="text-white/60">
             {" "}
             (Pediste {result.requestedQuantity}, pero solo hay {result.quantity} disponibles)
           </span>
@@ -90,7 +90,7 @@ export function AddVolumeToCartResult({ result }: { result: AddVolumeResult }) {
         {stockLabel && (
           <>
             {" "}
-            <span className="inline-flex items-center gap-1 text-muted-foreground">
+            <span className="inline-flex items-center gap-1 text-white/60">
               <Package className="h-3 w-3" />
               {stockLabel}
             </span>

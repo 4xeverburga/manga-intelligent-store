@@ -148,15 +148,15 @@ export function CatalogueClient() {
             <button
               key={genre}
               onClick={() => handleGenreToggle(genre)}
-              className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+              className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-white/20"
             >
               {genre}
-              <span className="ml-1 text-primary/60">&times;</span>
+              <span className="ml-1 text-white/40">&times;</span>
             </button>
           ))}
           <button
             onClick={handleGenreClear}
-            className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+            className="text-xs text-[#a1a1aa] underline-offset-2 hover:underline hover:text-white"
           >
             Limpiar filtros
           </button>
@@ -164,7 +164,7 @@ export function CatalogueClient() {
       )}
 
       {/* Results count */}
-      <p className="mb-4 text-sm text-muted-foreground">
+      <p className="mb-4 text-sm text-[#a1a1aa]">
         {total} manga{total !== 1 ? "s" : ""} encontrado{total !== 1 ? "s" : ""}
       </p>
 
@@ -176,13 +176,13 @@ export function CatalogueClient() {
         </div>
       ) : mangas.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <p className="text-lg text-muted-foreground">No se encontraron resultados</p>
+          <p className="text-lg text-[#a1a1aa]">No se encontraron resultados</p>
           <button
             onClick={() => {
               handleGenreClear();
               handleSearch("");
             }}
-            className="mt-4 text-sm text-primary underline-offset-2 hover:underline"
+            className="mt-4 text-sm text-neon underline-offset-2 hover:underline"
           >
             Limpiar todos los filtros
           </button>
@@ -221,7 +221,7 @@ export function CatalogueClient() {
 
       {/* End of results */}
       {!loading && !nextPage && mangas.length > 0 && (
-        <p className="mt-8 text-center text-sm text-muted-foreground">
+        <p className="mt-8 text-center text-sm text-[#71717a]">
           Has llegado al final del catálogo
         </p>
       )}

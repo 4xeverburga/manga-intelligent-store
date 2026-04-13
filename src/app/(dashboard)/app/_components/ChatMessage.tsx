@@ -18,8 +18,8 @@ export function ChatMessage({ message }: { message: UIMessage }) {
         className={cn(
           "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
           isUser
-            ? "bg-primary/20 text-primary"
-            : "bg-muted text-muted-foreground"
+            ? "bg-white/20 text-white"
+            : "bg-[#102620] text-neon"
         )}
       >
         {isUser ? "U" : "AI"}
@@ -40,8 +40,8 @@ export function ChatMessage({ message }: { message: UIMessage }) {
                 className={cn(
                   "rounded-lg px-3 py-2 text-base leading-relaxed",
                   isUser
-                    ? "inline-block bg-primary text-primary-foreground"
-                    : "bg-muted/50 prose prose-invert prose-base max-w-none"
+                    ? "inline-block bg-white text-black"
+                    : "bg-[#061a1c] prose prose-invert prose-base max-w-none"
                 )}
                 dangerouslySetInnerHTML={{
                   __html: formatMarkdown(part.text),
@@ -99,9 +99,9 @@ export function ChatMessage({ message }: { message: UIMessage }) {
               return (
                 <div
                   key={toolPart.toolCallId}
-                  className="flex items-center gap-2 text-xs text-muted-foreground"
+                  className="flex items-center gap-2 text-xs text-[#a1a1aa]"
                 >
-                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-neon border-t-transparent" />
                   Buscando...
                 </div>
               );

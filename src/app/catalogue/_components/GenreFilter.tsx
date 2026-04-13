@@ -52,7 +52,7 @@ export function GenreFilter({ activeGenres, onToggle, onClear }: GenreFilterProp
       >
         <span>Géneros</span>
         {activeGenres.length > 0 && (
-          <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+          <span className="inline-flex size-5 items-center justify-center rounded-full bg-neon text-[10px] font-bold text-black">
             {activeGenres.length}
           </span>
         )}
@@ -63,18 +63,18 @@ export function GenreFilter({ activeGenres, onToggle, onClear }: GenreFilterProp
       </Button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-xl border border-border bg-popover p-2 shadow-xl">
+        <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-xl border border-[#1e2c31] bg-[#061a1c] p-2 shadow-xl">
           <input
             type="text"
             placeholder="Buscar género..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="mb-2 w-full rounded-lg border border-input bg-transparent px-3 py-1.5 text-sm outline-none placeholder:text-muted-foreground focus:border-ring"
+            className="mb-2 w-full rounded-lg border border-[#1e2c31] bg-transparent px-3 py-1.5 text-sm text-white outline-none placeholder:text-[#71717a] focus:border-neon"
             autoFocus
           />
           <div className="max-h-60 overflow-y-auto">
             {filtered.length === 0 ? (
-              <p className="py-2 text-center text-xs text-muted-foreground">
+              <p className="py-2 text-center text-xs text-[#71717a]">
                 No se encontraron géneros
               </p>
             ) : (
@@ -84,13 +84,13 @@ export function GenreFilter({ activeGenres, onToggle, onClear }: GenreFilterProp
                   <button
                     key={genre}
                     onClick={() => onToggle(genre)}
-                    className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground hover:bg-muted"
+                    className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-white hover:bg-[#102620]"
                   >
                     <span
                       className={`flex size-4 items-center justify-center rounded border ${
                         active
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-muted-foreground/30"
+                          ? "border-neon bg-neon text-black"
+                          : "border-[#3f3f46]"
                       }`}
                     >
                       {active && <Check className="size-3" />}
@@ -107,7 +107,7 @@ export function GenreFilter({ activeGenres, onToggle, onClear }: GenreFilterProp
                 onClear();
                 setOpen(false);
               }}
-              className="mt-2 w-full rounded-lg border-t border-border py-1.5 text-center text-xs text-muted-foreground hover:text-foreground"
+              className="mt-2 w-full rounded-lg border-t border-[#1e2c31] py-1.5 text-center text-xs text-[#a1a1aa] hover:text-white"
             >
               Limpiar selección
             </button>

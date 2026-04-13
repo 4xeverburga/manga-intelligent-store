@@ -16,7 +16,7 @@ export function MangaToolResult({ results }: { results: MangaResult[] }) {
       {results.map((manga) => (
         <Card
           key={manga.id}
-          className="flex gap-3 border-border/40 bg-card/80 p-3"
+          className="flex gap-3 border-[#1e2c31] bg-[#02090a] p-3"
         >
           {manga.imageUrl && (
             <Image
@@ -29,7 +29,7 @@ export function MangaToolResult({ results }: { results: MangaResult[] }) {
           )}
           <div className="flex flex-1 flex-col gap-1 overflow-hidden">
             <p className="truncate text-sm font-semibold">{manga.title}</p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-[#a1a1aa]">
               ⭐ {manga.score}
             </p>
             <div className="flex flex-wrap gap-1">

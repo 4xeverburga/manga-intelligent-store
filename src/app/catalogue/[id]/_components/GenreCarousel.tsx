@@ -75,7 +75,7 @@ export function GenreCarousel({ genre, excludeId }: GenreCarouselProps) {
   if (results.length === 0) {
     return (
       <div className="mt-12">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-[#71717a]">
           No se encontraron otros mangas de {spanishGenre}.
         </p>
       </div>
@@ -85,7 +85,7 @@ export function GenreCarousel({ genre, excludeId }: GenreCarouselProps) {
   return (
     <div className="mt-12">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-foreground">
+        <h2 className="text-lg font-medium text-white">
           Mangas de {spanishGenre}
         </h2>
         <div className="flex gap-1">
@@ -114,7 +114,7 @@ export function GenreCarousel({ genre, excludeId }: GenreCarouselProps) {
           <Link
             key={manga.id}
             href={`/catalogue/${manga.id}`}
-            className="group flex w-40 shrink-0 flex-col overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10 transition-all hover:shadow-lg hover:shadow-primary/5 hover:ring-primary/20"
+            className="group flex w-40 shrink-0 flex-col overflow-hidden rounded-xl border border-[#1e2c31] bg-[#02090a] transition-all hover:border-neon/20"
           >
             <div className="relative aspect-3/4 overflow-hidden">
               <Image
@@ -126,13 +126,13 @@ export function GenreCarousel({ genre, excludeId }: GenreCarouselProps) {
                 loading="lazy"
               />
               {manga.score && manga.score > 0 && (
-                <span className="absolute top-2 right-2 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-emerald-400 backdrop-blur-sm">
+                <span className="absolute top-2 right-2 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-neon backdrop-blur-sm">
                   ★ {manga.score.toFixed(1)}
                 </span>
               )}
             </div>
             <div className="flex flex-1 flex-col gap-1 p-2.5">
-              <h3 className="line-clamp-2 text-xs font-medium leading-tight text-foreground">
+              <h3 className="line-clamp-2 text-xs font-medium leading-tight text-white">
                 {manga.title}
               </h3>
               <div className="mt-auto flex flex-wrap gap-1">

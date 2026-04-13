@@ -1,15 +1,10 @@
 import type { Metadata } from "next";
-import { Nunito, Sora, Geist_Mono } from "next/font/google";
+import { Inter, Geist_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
-const nunito = Nunito({
-  variable: "--font-nunito",
-  subsets: ["latin"],
-});
-
-const sora = Sora({
-  variable: "--font-sora",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -43,7 +38,7 @@ export const metadata: Metadata = {
     siteName: "Hablemos Manga",
   },
   other: {
-    "theme-color": "#020617",
+    "theme-color": "#000000",
   },
 };
 
@@ -55,7 +50,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`dark ${nunito.variable} ${sora.variable} ${geistMono.variable} h-full antialiased`}
+      className={`dark ${inter.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <TooltipProvider delay={300}>{children}</TooltipProvider>

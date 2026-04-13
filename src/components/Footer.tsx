@@ -1,15 +1,12 @@
-import { Separator } from "@/components/ui/separator";
-
 export function Footer() {
   return (
-    <footer className="mt-auto">
-      <Separator />
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-6 text-sm text-muted-foreground">
+    <footer className="mt-auto border-t border-[#1e2c31] bg-[#02090a]">
+      <div className="mx-auto flex max-w-[1280px] items-center justify-between px-4 py-8 text-sm text-[#a1a1aa] md:px-8 lg:px-16">
         <p>&copy; {new Date().getFullYear()} Hablemos Manga</p>
         <p>
           Powered by{" "}
-          <span className="font-medium text-primary">Gemini AI</span> +{" "}
-          <span className="font-medium text-foreground">pgvector</span>
+          <span className="font-medium text-neon">Gemini AI</span> +{" "}
+          <span className="font-medium text-white">pgvector</span>
         </p>
       </div>
     </footer>

@@ -268,7 +268,7 @@ function CheckoutContent() {
         ),
         timeouturl: `${window.location.origin}/checkout?status=timeout`,
         merchantlogo: `${window.location.origin}/logo.png`,
-        formbuttoncolor: "#dc2626",
+        formbuttoncolor: "#36f4a4",
         action: `${window.location.origin}/checkout?status=callback`,
         complete(params: Record<string, string>) {
           handleVerify(params.transactionToken, merchantId);
@@ -334,22 +334,22 @@ function CheckoutContent() {
   // Success screen
   if (status === "success") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-4">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-black px-4">
         <div className="animate-in fade-in zoom-in flex flex-col items-center gap-4 text-center">
-          <CheckCircle2 className="h-16 w-16 text-emerald-500" />
-          <h1 className="text-2xl font-bold">
+          <CheckCircle2 className="h-16 w-16 text-neon" />
+          <h1 className="text-2xl font-light text-white">
             ¡Compra simbólica realizada!
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-[#a1a1aa]">
             Transacción: <span className="font-mono">{txnId}</span>
           </p>
-          <p className="text-muted-foreground">
+          <p className="text-[#a1a1aa]">
             Monto: S/ {totalPrice.toFixed(2)} &middot;{" "}
             {new Date().toLocaleDateString("es-PE")}
           </p>
           <Separator className="my-2 w-48" />
           <Link href="/app">
-            <Button className="bg-cta text-cta-foreground hover:bg-cta/90">
+            <Button className="rounded-full bg-white text-black hover:bg-white/90">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Volver al Chat
             </Button>
@@ -362,9 +362,9 @@ function CheckoutContent() {
   // No reservation (direct navigation without going through cart)
   if (!urlOrderId || items.length === 0) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-4">
-        <ShoppingBag className="h-16 w-16 text-muted-foreground/30" />
-        <h1 className="text-xl font-semibold">Tu carrito está vacío</h1>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-black px-4">
+        <ShoppingBag className="h-16 w-16 text-[#71717a]/30" />
+        <h1 className="text-xl font-light text-white">Tu carrito está vacío</h1>
         <Link href="/app">
           <Button variant="outline">
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -376,18 +376,18 @@ function CheckoutContent() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-4xl flex-col gap-8 px-4 py-12">
+    <div className="mx-auto flex min-h-screen max-w-4xl flex-col gap-8 bg-black px-4 py-12">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={handleGoBack}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl font-bold">Checkout</h1>
+        <h1 className="text-2xl font-light text-white">Checkout</h1>
       </div>
 
       <div className="grid gap-8 md:grid-cols-2">
         {/* Order Summary */}
-        <div className="rounded-lg border border-border/40 bg-card p-6">
-          <h2 className="mb-4 text-lg font-semibold">Resumen del pedido</h2>
+        <div className="rounded-lg border border-[#1e2c31] bg-[#02090a] p-6">
+          <h2 className="mb-4 text-lg font-medium text-white">Resumen del pedido</h2>
           <div className="space-y-3">
             {items.map((item) => {
               const info = stockMap[item.volumeId];
@@ -405,7 +405,7 @@ function CheckoutContent() {
                   <div className="flex-1">
                     <p className="text-sm font-medium">{item.title}</p>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-[#71717a]">
                         x{item.quantity}
                       </span>
                       {item.source === "ai-suggested" && (
@@ -416,12 +416,12 @@ function CheckoutContent() {
                     </div>
                     {info && (
                       <div className="mt-0.5 flex items-center gap-1">
-                        <Package className="size-3 text-muted-foreground" />
+                        <Package className="size-3 text-[#71717a]" />
                         <span
                           className={`text-[10px] ${
                             !info.canBeDropshipped && info.stock < item.quantity
                               ? "text-destructive"
-                              : "text-muted-foreground"
+                              : "text-[#71717a]"
                           }`}
                         >
                           {info.canBeDropshipped && item.quantity > info.stock
@@ -441,20 +441,20 @@ function CheckoutContent() {
           </div>
           <Separator className="my-4" />
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">
+            <span className="text-[#a1a1aa]">
               Total ({totalItems} item{totalItems !== 1 ? "s" : ""})
             </span>
-            <span className="text-lg font-bold">
+            <span className="text-lg font-bold text-white">
               S/ {totalPrice.toFixed(2)}
             </span>
           </div>
 
           {/* Expected delivery time */}
-          <div className="mt-4 flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2">
-            <Truck className="h-4 w-4 text-primary" />
+          <div className="mt-4 flex items-center gap-2 rounded-md bg-[#102620] px-3 py-2">
+            <Truck className="h-4 w-4 text-neon" />
             <div className="text-sm">
-              <p className="font-medium">Tiempo estimado de entrega</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="font-medium text-white">Tiempo estimado de entrega</p>
+              <p className="text-xs text-[#a1a1aa]">
                 {items.some((i) => stockMap[i.volumeId]?.canBeDropshipped)
                   ? "7–15 días hábiles (incluye artículos bajo pedido)"
                   : "3–5 días hábiles"}
@@ -466,13 +466,13 @@ function CheckoutContent() {
         {/* Delivery form + Payment */}
         <div className="flex flex-col gap-6">
           {/* Delivery info form */}
-          <div className="rounded-lg border border-border/40 bg-card p-6">
-            <h2 className="mb-4 text-lg font-semibold">Datos de envío</h2>
+          <div className="rounded-lg border border-[#1e2c31] bg-[#02090a] p-6">
+            <h2 className="mb-4 text-lg font-medium text-white">Datos de envío</h2>
             <div className="space-y-3">
               <div>
                 <label
                   htmlFor="email"
-                  className="mb-1 block text-xs font-medium text-muted-foreground"
+                  className="mb-1 block text-xs font-medium text-[#a1a1aa]"
                 >
                   Correo electrónico
                 </label>
@@ -483,13 +483,13 @@ function CheckoutContent() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="tu@email.com"
                   disabled={status === "paying" || status === "expired"}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-60"
+                  className="w-full rounded-md border border-[#1e2c31] bg-[#061a1c] px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-neon/50 disabled:opacity-60"
                 />
               </div>
               <div>
                 <label
                   htmlFor="phone"
-                  className="mb-1 block text-xs font-medium text-muted-foreground"
+                  className="mb-1 block text-xs font-medium text-[#a1a1aa]"
                 >
                   Teléfono
                 </label>
@@ -500,13 +500,13 @@ function CheckoutContent() {
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+51 999 999 999"
                   disabled={status === "paying" || status === "expired"}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-60"
+                  className="w-full rounded-md border border-[#1e2c31] bg-[#061a1c] px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-neon/50 disabled:opacity-60"
                 />
               </div>
               <div>
                 <label
                   htmlFor="address"
-                  className="mb-1 block text-xs font-medium text-muted-foreground"
+                  className="mb-1 block text-xs font-medium text-[#a1a1aa]"
                 >
                   Dirección de entrega
                 </label>
@@ -517,21 +517,21 @@ function CheckoutContent() {
                   placeholder="Av. Ejemplo 123, Distrito, Ciudad"
                   rows={2}
                   disabled={status === "paying" || status === "expired"}
-                  className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-60"
+                  className="w-full resize-none rounded-md border border-[#1e2c31] bg-[#061a1c] px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-neon/50 disabled:opacity-60"
                 />
               </div>
             </div>
           </div>
 
           {/* Payment section */}
-          <div className="flex flex-col items-center justify-center rounded-lg border border-border/40 bg-card p-6">
+          <div className="flex flex-col items-center justify-center rounded-lg border border-[#1e2c31] bg-[#02090a] p-6">
             {/* Timer badge */}
             {(status === "reserved" || status === "paying") && secondsLeft > 0 && (
               <div
                 className={`mb-4 flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ${
                   secondsLeft <= 30
                     ? "bg-destructive/10 text-destructive"
-                    : "bg-primary/10 text-primary"
+                    : "bg-neon/10 text-neon"
                 }`}
               >
                 <Clock className="h-4 w-4" />
@@ -539,7 +539,7 @@ function CheckoutContent() {
               </div>
             )}
 
-            <ShoppingBag className="mb-4 h-12 w-12 text-muted-foreground/30" />
+            <ShoppingBag className="mb-4 h-12 w-12 text-[#71717a]/30" />
 
             {status === "expired" ? (
               <>
@@ -553,7 +553,7 @@ function CheckoutContent() {
               </>
             ) : (
               <>
-                <p className="mb-2 text-center text-sm text-muted-foreground">
+                <p className="mb-2 text-center text-sm text-[#a1a1aa]">
                   Stock reservado. Completa tus datos y paga antes de que expire.
                 </p>
 
@@ -567,7 +567,7 @@ function CheckoutContent() {
                   <Button
                     onClick={handlePay}
                     disabled={!scriptLoaded}
-                    className="w-full max-w-xs bg-cta text-cta-foreground hover:bg-cta/90"
+                    className="w-full max-w-xs rounded-full bg-white text-black hover:bg-white/90"
                     size="lg"
                   >
                     {process.env.NEXT_PUBLIC_APP_ENVIRONMENT === "DEV"
@@ -579,7 +579,7 @@ function CheckoutContent() {
                 {status === "paying" && (
                   <Button
                     disabled
-                    className="w-full max-w-xs bg-cta text-cta-foreground"
+                    className="w-full max-w-xs rounded-full bg-white text-black"
                     size="lg"
                   >
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -594,7 +594,7 @@ function CheckoutContent() {
                 <p className="mt-3 text-center text-[11px] font-medium text-amber-500">
                   Entorno de desarrollo — No se realizará un cobro real
                 </p>
-                <p className="mt-1 text-center text-[10px] text-muted-foreground">
+                <p className="mt-1 text-center text-[10px] text-[#71717a]">
                   Tarjeta de prueba: 4474 1100 0000 0004 &middot; Exp: 12/25
                   &middot; CVV: 111
                 </p>

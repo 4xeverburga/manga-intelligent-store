@@ -79,10 +79,10 @@ export default async function MangaDetailPage({ params }: Props) {
   const volumes = await getVolumes(manga.id);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col bg-black">
       <Navbar />
-      <main className="flex-1 pt-20">
-        <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="flex-1 pt-24">
+        <div className="mx-auto max-w-[1280px] px-4 py-8 md:px-8 lg:px-16">
           <MangaDetail manga={manga} />
           <VolumesList volumes={volumes} mangaImageUrl={manga.imageUrl} />
           <GenreCarousel

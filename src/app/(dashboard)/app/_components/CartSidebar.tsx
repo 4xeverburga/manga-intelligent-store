@@ -40,7 +40,7 @@ function CartItemRow({
   const approveItem = useCartStore((s) => s.approveItem);
 
   return (
-    <div className="flex items-center gap-2 rounded-md p-2 hover:bg-muted/50">
+    <div className="flex items-center gap-2 rounded-md p-2 hover:bg-[#061a1c]">
       {item.imageUrl && (
         <Image
           src={item.imageUrl}
@@ -53,18 +53,18 @@ function CartItemRow({
       <div className="flex-1 overflow-hidden">
         <p className="truncate text-xs font-medium">{item.title}</p>
         <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-[#a1a1aa]">
             S/ {item.price.toFixed(2)}
           </span>
         </div>
         {stockInfo && (
           <div className="mt-0.5 flex items-center gap-1">
-            <Package className="size-3 text-muted-foreground" />
+            <Package className="size-3 text-[#71717a]" />
             <span
               className={`text-[10px] ${
                 !stockInfo.canBeDropshipped && stockInfo.stock < item.quantity
                   ? "text-destructive"
-                  : "text-muted-foreground"
+                  : "text-[#71717a]"
               }`}
             >
               {stockInfo.canBeDropshipped && item.quantity > stockInfo.stock
@@ -112,7 +112,7 @@ function CartItemRow({
             variant="ghost"
             size="icon-xs"
             onClick={() => approveItem(item.volumeId)}
-            className="text-emerald-400 hover:text-emerald-300"
+            className="text-neon hover:text-neon/80"
             title="Aprobar"
           >
             <Check className="size-3" />
@@ -122,7 +122,7 @@ function CartItemRow({
           variant="ghost"
           size="icon-xs"
           onClick={() => removeItem(item.volumeId)}
-          className="text-muted-foreground hover:text-destructive"
+          className="text-[#71717a] hover:text-destructive"
           title="Eliminar"
         >
           {showApprove ? <X className="size-3" /> : <Trash2 className="size-3" />}
@@ -224,9 +224,9 @@ export function CartSidebar() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 border-b border-border/40 px-4 py-3">
-        <ShoppingCart className="h-4 w-4 text-primary" />
-        <h2 className="text-sm font-semibold">Tu Carrito</h2>
+      <div className="flex items-center gap-2 border-b border-[#1e2c31] px-4 py-3">
+        <ShoppingCart className="h-4 w-4 text-neon" />
+        <h2 className="text-sm font-semibold text-white">Tu Carrito</h2>
         {totalItems > 0 && (
           <Badge variant="secondary" className="ml-auto text-xs">
             {totalItems}
@@ -236,7 +236,7 @@ export function CartSidebar() {
 
       <ScrollArea className="flex-1">
         {isEmpty ? (
-          <div className="flex flex-col items-center gap-2 px-4 py-12 text-center text-muted-foreground">
+          <div className="flex flex-col items-center gap-2 px-4 py-12 text-center text-[#71717a]">
             <ShoppingCart className="h-8 w-8 opacity-30" />
             <p className="text-sm">Tu carrito está vacío</p>
             <p className="text-xs">
@@ -250,7 +250,7 @@ export function CartSidebar() {
               <div>
                 <div className="flex items-center gap-1.5 px-2 py-1.5">
                   <div className="size-2 rounded-full bg-emerald-500" />
-                  <span className="text-xs font-medium text-muted-foreground">
+                  <span className="text-xs font-medium text-[#a1a1aa]">
                     Tus selecciones ({manualItems.length})
                   </span>
                 </div>
@@ -265,14 +265,14 @@ export function CartSidebar() {
               <div className={manualItems.length > 0 ? "mt-2" : ""}>
                 <div className="flex items-center justify-between px-2 py-1.5">
                   <div className="flex items-center gap-1.5">
-                    <div className="size-2 rounded-full bg-primary" />
-                    <span className="text-xs font-medium text-muted-foreground">
+                    <div className="size-2 rounded-full bg-neon" />
+                    <span className="text-xs font-medium text-[#a1a1aa]">
                       Sugerencias IA ({aiItems.length})
                     </span>
                   </div>
                   <button
                     onClick={clearAISuggestions}
-                    className="text-[10px] text-muted-foreground hover:text-foreground"
+                    className="text-[10px] text-[#71717a] hover:text-white"
                   >
                     Descartar todas
                   </button>
@@ -287,12 +287,12 @@ export function CartSidebar() {
       </ScrollArea>
 
       {!isEmpty && (
-        <div className="border-t border-border/40 p-4">
+        <div className="border-t border-[#1e2c31] p-4">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">
+            <span className="text-[#a1a1aa]">
               Total ({totalItems} item{totalItems !== 1 ? "s" : ""})
             </span>
-            <span className="font-semibold">S/ {totalPrice.toFixed(2)}</span>
+            <span className="font-semibold text-white">S/ {totalPrice.toFixed(2)}</span>
           </div>
 
           {error && (
@@ -315,7 +315,7 @@ export function CartSidebar() {
           <Button
             onClick={handleReserveAndPay}
             disabled={reserving}
-            className="w-full bg-cta text-cta-foreground hover:bg-cta/90"
+            className="w-full rounded-full bg-white text-black hover:bg-white/90"
           >
             {reserving ? (
               <>
