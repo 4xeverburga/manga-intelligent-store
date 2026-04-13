@@ -11,13 +11,20 @@ export interface PaymentResult {
   rawResponse?: Record<string, unknown>;
 }
 
+export interface AuthorizeTransactionInput {
+  transactionToken: string;
+  merchantId: string;
+  purchaseNumber: string;
+  amount: number;
+  currency?: string;
+}
+
 export interface IPaymentProvider {
   createSession(
     amount: number,
     orderId: string
   ): Promise<PaymentSession>;
-  verifyTransaction(
-    transactionId: string,
-    merchantId: string
+  authorizeTransaction(
+    input: AuthorizeTransactionInput
   ): Promise<PaymentResult>;
 }

@@ -2,6 +2,7 @@ import type {
   IPaymentProvider,
   PaymentSession,
   PaymentResult,
+  AuthorizeTransactionInput,
 } from "@/core/domain/ports/IPaymentProvider";
 
 const NIUBIZ_MERCHANT_ID = process.env.NIUBIZ_MERCHANT_ID!;
@@ -85,37 +86,76 @@ export class NiubizAdapter implements IPaymentProvider {
     };
   }
 
-  async verifyTransaction(
-    transactionId: string,
-    merchantId: string
+  /** Step 4: Authorize the transaction (POST) */
+  async authorizeTransaction(
+    input: AuthorizeTransactionInput
   ): Promise<PaymentResult> {
     const securityToken = await this.getSecurityToken();
 
-    const response = await fetch(
-      `${NIUBIZ_SESSION_URL.replace("token/session", "configuration/transaction")}/${merchantId}/${transactionId}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: securityToken,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const baseUrl = new URL(NIUBIZ_SECURITY_URL);
+    const authorizationUrl = `${baseUrl.origin}/api.authorization/v3/authorization/ecommerce/${input.merchantId}`;
 
-    if (!response.ok) {
+    const body = {
+      channel: "web",
+      captureType: "manual",
+      countable: true,
+      order: {
+        tokenId: input.transactionToken,
+        purchaseNumber: input.purchaseNumber,
+        amount: Number(input.amount.toFixed(2)),
+        currency: input.currency ?? "PEN",
+      },
+    };
+
+    console.log("[Niubiz] POST", authorizationUrl);
+    console.log("[Niubiz] Body:", JSON.stringify(body, null, 2));
+
+    const response = await fetch(authorizationUrl, {
+      method: "POST",
+      headers: {
+        Authorization: securityToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    const responseText = await response.text();
+    console.log("[Niubiz] Response status:", response.status);
+    console.log("[Niubiz] Response body:", responseText);
+
+    let data: Record<string, unknown>;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
       return {
         success: false,
-        errorMessage: `Verification failed: ${response.status}`,
+        errorMessage: `Authorization failed: ${response.status} — ${responseText.slice(0, 200)}`,
       };
     }
 
-    const data = await response.json();
-    const actionCode = data?.dataMap?.ACTION_CODE;
+    if (!response.ok) {
+      const errMsg =
+        (data as { errorMessage?: string }).errorMessage ??
+        (data as { description?: string }).description ??
+        `Authorization failed: ${response.status}`;
+      console.error("[Niubiz] Authorization error:", errMsg);
+      return {
+        success: false,
+        errorMessage: errMsg,
+        rawResponse: data,
+      };
+    }
+
+    const actionCode = (data as { dataMap?: { ACTION_CODE?: string } })?.dataMap?.ACTION_CODE;
+    const txnId = (data as { dataMap?: { TRANSACTION_ID?: string } })?.dataMap?.TRANSACTION_ID;
 
     return {
       success: actionCode === "000",
-      transactionId: data?.dataMap?.TRANSACTION_ID ?? transactionId,
-      errorMessage: actionCode !== "000" ? `Action code: ${actionCode}` : undefined,
+      transactionId: txnId ?? input.transactionToken,
+      errorMessage:
+        actionCode !== "000"
+          ? (data as { dataMap?: { ACTION_DESCRIPTION?: string } })?.dataMap?.ACTION_DESCRIPTION ?? `Action code: ${actionCode}`
+          : undefined,
       rawResponse: data,
     };
   }

@@ -209,10 +209,10 @@ export function CartSidebar() {
         );
       }
 
-      const { orderId, expiresAt } = await res.json();
+      const { orderId, expiresAt, purchaseNumber } = await res.json();
       // Stash pre-reservation stock snapshot for checkout display
       try { sessionStorage.setItem("checkout_stock", JSON.stringify(stockMap)); } catch {}
-      router.push(`/checkout?orderId=${orderId}&expiresAt=${encodeURIComponent(expiresAt)}`);
+      router.push(`/checkout?orderId=${orderId}&expiresAt=${encodeURIComponent(expiresAt)}&purchaseNumber=${purchaseNumber}`);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Error al reservar el stock"

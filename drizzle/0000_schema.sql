@@ -62,8 +62,11 @@ ALTER TABLE "inventory" ADD CONSTRAINT "inventory_volume_id_manga_volumes_id_fk"
 --> statement-breakpoint
 
 -- ── orders ────────────────────────────────────────────────────────────────────
+CREATE SEQUENCE IF NOT EXISTS orders_purchase_number_seq START WITH 1000;
+
 CREATE TABLE "orders" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"purchase_number" bigint NOT NULL DEFAULT nextval('orders_purchase_number_seq'),
 	"niubiz_transaction_id" text,
 	"status" text DEFAULT 'pending' NOT NULL,
 	"total_amount" real NOT NULL,
@@ -74,6 +77,8 @@ CREATE TABLE "orders" (
 	"expires_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
+--> statement-breakpoint
+CREATE UNIQUE INDEX "orders_purchase_number_idx" ON "orders" USING btree ("purchase_number");
 --> statement-breakpoint
 
 -- ── order_items ───────────────────────────────────────────────────────────────

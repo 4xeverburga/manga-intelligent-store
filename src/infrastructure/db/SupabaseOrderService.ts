@@ -100,8 +100,12 @@ export class SupabaseOrderService implements IOrderService {
       throw new Error(`Reservation failed: ${error.message}`);
     }
 
-    const result = data as { order_id: string; expires_at: string };
-    return { orderId: result.order_id, expiresAt: result.expires_at };
+    const result = data as { order_id: string; expires_at: string; purchase_number: number };
+    return {
+      orderId: result.order_id,
+      expiresAt: result.expires_at,
+      purchaseNumber: String(result.purchase_number),
+    };
   }
 
   async confirmOrder(
