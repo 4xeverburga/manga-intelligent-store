@@ -106,6 +106,48 @@ export class SearchMangas {
 - Integration tests may hit real services; require `.env.test` or `.env.local`
 - `npm test` (single run) / `npm run test:watch`
 
+### Documentation
+
+- Keep documentation up to date continuously.
+- Documentation files must live in the `docs/` folder.
+- Maintain long-form project history in `docs/logbooks/[iso_date].md`.
+- Maintain current execution state (pending and completed tasks) in `docs/status.md`.
+- Store project artifacts co-created with the user in `docs/artifacts/`.
+- Push updated documentation to the `docs` branch first.
+- If direct push to `docs` is blocked, create a topic branch prefixed with `docs/` (for example: `copilot/docs/update-logbook`) and open a PR into `docs`.
+- After documentation is merged into `docs`, open a PR from `docs` into the target branch.
+
+#### Logbook Conventions (`docs/logbooks/*.md`)
+
+- Each entry must include a sequential number, a descriptive title, and the date.
+- Include technical details: configurations, commands, IPs, endpoints, and error messages.
+- Use fenced code blocks with the appropriate language identifier (`bash`, `properties`, `text`, etc.).
+- Record findings, root causes, and decisions (not only actions).
+- Redact all sensitive data (keys, passwords, tokens).
+
+#### Status Conventions (`docs/status.md`)
+
+- Maintain sections for **Done**, **Pending**, and **Risks / Blockers**.
+- Each pending task must include an owner in brackets: `**[{Owner1}]**`.
+- Use checkboxes consistently: `- [x]` for done and `- [ ]` for pending.
+- Include a **Next Milestone** section with a clear, measurable goal.
+- Update the **Team Ownership** table whenever roles change.
+
+#### Artifacts (`docs/artifacts/`)
+
+Artifacts are deliverables co-created between the team and AI agents during the project lifecycle.
+
+| Subdirectory | Content |
+|---|---|
+| `docs/artifacts/use-cases/` | Use case specifications |
+| `docs/artifacts/user-stories/` | User stories |
+| `docs/artifacts/misuse-cases/` | Misuse or abuse case specifications |
+| `docs/artifacts/diagrams/` | PlantUML sources (`.puml`) and rendered outputs |
+
+- Use case and misuse case files should follow: `UC-{NNN}-{short-description}.md` and `MUC-{NNN}-{short-description}.md`.
+- User stories should follow: `US-{NNN}-{short-description}.md`.
+- PlantUML diagram sources must be committed as `.puml` files; rendered images (`.png`, `.svg`) may be included alongside them.
+
 ## Commands
 
 ```bash
