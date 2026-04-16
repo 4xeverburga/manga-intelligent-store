@@ -7,6 +7,7 @@
 ## Pending
 
 - [ ] On any screen except the dashboard page, clicking an item to add it to cart must auto-open the cart side tab (no need to click the cart icon) **[{Frontend}]**
+- [ ] Implement a configurable temperature parameter for the LLM model **[{AI}]**
 
 ## Risks / Blockers
 
