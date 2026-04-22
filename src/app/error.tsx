@@ -16,10 +16,10 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-4 text-center">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-black px-4 text-center">
       <AlertTriangle className="h-16 w-16 text-amber-500" />
-      <h1 className="text-2xl font-bold">Algo salió mal</h1>
-      <p className="max-w-md text-muted-foreground">
+      <h1 className="text-2xl font-light text-white">Algo salió mal</h1>
+      <p className="max-w-md text-[#a1a1aa]">
         Ocurrió un error inesperado. Puedes intentar de nuevo o volver al
         inicio.
       </p>
@@ -29,13 +29,13 @@ export default function GlobalError({
         </Button>
         <a
           href="/"
-          className={buttonVariants({ className: "bg-cta text-cta-foreground hover:bg-cta/90" })}
+          className={buttonVariants()}
         >
           Ir al inicio
         </a>
       </div>
       {error.digest && (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-[#71717a]">
           Error ID: {error.digest}
         </p>
       )}

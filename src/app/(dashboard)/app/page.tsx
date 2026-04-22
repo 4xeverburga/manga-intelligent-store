@@ -11,17 +11,17 @@ export default function AppPage() {
       <DashboardHeader />
       <div className="flex flex-1 overflow-hidden">
         {/* Left sidebar - insights (hidden on mobile) */}
-        <aside className="hidden w-[280px] shrink-0 border-r border-border/40 bg-surface lg:block">
+        <aside className="hidden w-[280px] shrink-0 border-r border-[#1e2c31] bg-[#02090a] lg:block">
           <InsightsSidebar />
         </aside>
 
         {/* Center - chat */}
-        <main className="flex flex-1 flex-col overflow-hidden">
+        <main className="flex flex-1 flex-col overflow-hidden bg-black">
           <Chat />
         </main>
 
         {/* Right sidebar - cart (hidden on mobile) */}
-        <aside className="hidden w-[320px] shrink-0 border-l border-border/40 bg-surface lg:block">
+        <aside className="hidden w-[320px] shrink-0 border-l border-[#1e2c31] bg-[#02090a] lg:block">
           <CartSidebar />
         </aside>
       </div>

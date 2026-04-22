@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { SupabaseMangaRepository } from "@/infrastructure/db/DrizzleMangaRepository";
+import { SupabaseMangaRepository } from "@/infrastructure/db/SupabaseMangaRepository";
 import { GetAvailableGenres } from "@/core/application/use-cases/GetAvailableGenres";
 
 const getAvailableGenres = new GetAvailableGenres(new SupabaseMangaRepository());

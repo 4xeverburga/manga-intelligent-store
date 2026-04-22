@@ -4,17 +4,16 @@ import type {
 } from "@/core/domain/ports/IPaymentProvider";
 
 interface Input {
-  transactionId: string;
+  transactionToken: string;
   merchantId: string;
+  purchaseNumber: string;
+  amount: number;
 }
 
 export class VerifyTransaction {
   constructor(private paymentProvider: IPaymentProvider) {}
 
   async execute(input: Input): Promise<PaymentResult> {
-    return this.paymentProvider.verifyTransaction(
-      input.transactionId,
-      input.merchantId
-    );
+    return this.paymentProvider.authorizeTransaction(input);
   }
 }

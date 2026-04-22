@@ -1,0 +1,135 @@
+@startuml checkout-dataflow
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam componentStyle rectangle
+skinparam nodesep 60
+skinparam ranksep 50
+
+title Checkout Transaction — Data Flow Across Stores
+
+legend top left
+  |= Color |= Store |= Lifetime |
+  | <#E8F5E9> | Zustand (client memory) | Tab lifetime, cleared on success |
+  | <#FFF9C4> | sessionStorage | Tab lifetime, survives redirect |
+  | <#E3F2FD> | URL query params | Navigation lifetime |
+  | <#FCE4EC> | Supabase PostgreSQL | Persistent |
+  | <#FFF3E0> | Niubiz servers | External, TTL-based |
+end legend
+
+' ============================================================
+' STORES
+' ============================================================
+
+package "Browser (Client)" {
+    storage "Zustand\nCart Store" as ZS #E8F5E9 {
+        card "items[]\n{volumeId, title, qty, price, imageUrl}" as ZS_items
+        card "totalPrice (computed)" as ZS_total
+    }
+
+    storage "sessionStorage" as SES #FFF9C4 {
+        card "checkout_stock\n{[volumeId]: {stock, canBeDropshipped}}" as SES_stock
+        card "checkout_ctx\n{orderId, merchantId, purchaseNumber}" as SES_ctx
+    }
+
+    storage "URL Query Params" as URL #E3F2FD {
+        card "orderId" as URL_oid
+        card "expiresAt" as URL_exp
+        card "purchaseNumber" as URL_pn
+        card "status (callback|timeout)" as URL_status
+        card "transactionToken" as URL_txn
+    }
+
+    storage "React State\n(useCheckout)" as RS {
+        card "status: reserved|paying|success|expired" as RS_status
+        card "confirmedAmount" as RS_amount
+        card "txnId" as RS_txn
+        card "email, phone, address" as RS_form
+    }
+}
+
+package "Server" {
+    database "Supabase\nPostgreSQL" as DB #FCE4EC {
+        card "orders\n{id, purchase_number, status,\ntotal_amount, email, phone,\ndelivery_address, expires_at,\nniubiz_transaction_id}" as DB_orders
+        card "order_items\n{volume_id, quantity, unit_price,\nreserved_from_stock}" as DB_items
+        card "inventory\n{volume_id, stock,\ncan_be_dropshipped}" as DB_inv
+        card "manga_volumes\n{id, price}" as DB_vols
+    }
+}
+
+cloud "Niubiz" as NIU #FFF3E0 {
+    card "accessToken\n(security API, short-lived)" as NIU_sec
+    card "sessionKey\n(30min TTL)" as NIU_ses
+    card "transactionToken\n(from form completion)" as NIU_txn
+    card "authorization result\n{actionCode, TRANSACTION_ID}" as NIU_auth
+}
+
+' ============================================================
+' PHASE 1 — RESERVATION
+' ============================================================
+
+ZS_items -[#2E7D32,bold]-> DB_vols : **①** POST /reserve\nclient items[] →\nserver re-fetches\nauthoritative prices
+DB_vols -[#2E7D32]-> DB_orders : **②** reserve_stock()\ncreates order row
+DB_vols -[#2E7D32]-> DB_items : order_items created
+DB_vols -[#2E7D32]-> DB_inv : stock decremented
+
+DB_orders -[#1565C0,bold]-> URL_oid : **③** Response\n{orderId, expiresAt,\npurchaseNumber}\n→ URL params
+DB_orders -[#1565C0]-> URL_exp
+DB_orders -[#1565C0]-> URL_pn
+
+ZS_items -[#F9A825,dashed]-> SES_stock : **④** Stock snapshot\ncached for UI display
+
+' ============================================================
+' PHASE 2 — DELIVERY + SESSION
+' ============================================================
+
+RS_form -[#C62828,bold]-> DB_orders : **⑤** POST /delivery\nemail, phone, address\n→ UPDATE orders
+
+URL_oid -[#6A1B9A,bold]-> NIU_ses : **⑥** POST /session\norderId → DB lookup\n→ Niubiz session\n→ sessionToken
+
+NIU_ses -[#F9A825,bold]-> SES_ctx : **⑦** {orderId, merchantId,\npurchaseNumber}\nstored for crash recovery
+
+' ============================================================
+' PHASE 3 — PAYMENT
+' ============================================================
+
+NIU_txn -[#E65100,bold]-> URL_txn : **⑧** Niubiz callback\nPOST → 303 redirect\ntransactionToken in URL
+NIU_txn -[#E65100]-> URL_status : status=callback
+
+' ============================================================
+' PHASE 4 — VERIFY & AUTHORIZE
+' ============================================================
+
+SES_ctx -[#6A1B9A,bold]-> DB_orders : **⑨** POST /verify\nReads orderId from\nsessionStorage,\ntxnToken from URL
+
+URL_txn -[#E65100]-> NIU_auth : **⑩** POST authorization\n{tokenId, purchaseNumber,\namount, currency}
+
+NIU_auth -[#2E7D32,bold]-> DB_orders : **⑪a** actionCode=000\n→ confirm_order()\nstatus='completed'\nniubiz_transaction_id set
+
+NIU_auth -[#C62828,bold]-> DB_inv : **⑪b** actionCode≠000\n→ release_reservation()\nstock restored
+
+DB_orders -[#2E7D32]-> RS_amount : **⑫** Verify response\n{amount} → confirmedAmount
+DB_orders -[#2E7D32]-> RS_txn : transactionId
+
+RS_status -[#C62828,dashed]-> ZS_items : **⑬** On success:\nclearCart()
+
+' ============================================================
+' COMPENSATING ACTIONS
+' ============================================================
+
+note bottom of DB_inv
+  **pg_cron (every 60s)**
+  cleanup_expired_reservations()
+  Finds: status='pending' AND expires_at < now()
+  Action: release_reservation() per order
+  Result: stock restored, order.status='expired'
+end note
+
+note bottom of SES_ctx
+  **Crash Recovery:**
+  On page reload with status=callback:
+  1. Read checkout_ctx from sessionStorage
+  2. Read transactionToken from URL
+  3. POST /verify to complete flow
+end note
+
+@enduml

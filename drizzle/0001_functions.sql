@@ -55,6 +55,7 @@ AS $$
 DECLARE
   v_order_id uuid;
   v_expires_at timestamptz;
+  v_purchase_number bigint;
   v_item jsonb;
   v_requested int;
   v_available int;
@@ -64,7 +65,7 @@ BEGIN
 
   INSERT INTO orders (status, total_amount, item_count, expires_at)
   VALUES ('pending', p_total_amount, p_item_count, v_expires_at)
-  RETURNING id INTO v_order_id;
+  RETURNING id, purchase_number INTO v_order_id, v_purchase_number;
 
   FOR v_item IN SELECT * FROM jsonb_array_elements(p_items)
   LOOP
@@ -116,7 +117,8 @@ BEGIN
 
   RETURN jsonb_build_object(
     'order_id', v_order_id,
-    'expires_at', v_expires_at
+    'expires_at', v_expires_at,
+    'purchase_number', v_purchase_number
   );
 END;
 $$;

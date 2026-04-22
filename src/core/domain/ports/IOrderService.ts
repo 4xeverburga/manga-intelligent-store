@@ -11,6 +11,7 @@ export interface StockCheckResult {
 export interface ReservationResult {
   orderId: string;
   expiresAt: string; // ISO timestamp
+  purchaseNumber: string; // serial numeric, max 12 digits
 }
 
 export interface IOrderService {

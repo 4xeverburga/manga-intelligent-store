@@ -30,7 +30,7 @@ export function Chat() {
   if (!hydrated) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <span className="text-sm text-muted-foreground italic">Cargando chat...</span>
+        <span className="text-sm text-[#71717a] italic">Cargando chat...</span>
       </div>
     );
   }
@@ -154,8 +154,8 @@ function ChatInner() {
             <ChatMessage key={msg.id} message={msg} />
           ))}
           {isStreaming && messages[messages.length - 1]?.role === "user" && (
-            <div className="flex gap-2 text-muted-foreground">
-              <div className="h-6 w-6 animate-pulse rounded-full bg-primary/30" />
+            <div className="flex gap-2 text-[#a1a1aa]">
+              <div className="h-6 w-6 animate-pulse rounded-full bg-neon/30" />
               <span className="text-base italic">Pensando...</span>
             </div>
           )}
@@ -163,7 +163,7 @@ function ChatInner() {
           {/* Turn limit reached */}
           {limitReached && !isStreaming && (
             <div className="flex flex-col items-center gap-2 py-4">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-[#a1a1aa]">
                 Has alcanzado el límite de {MAX_USER_TURNS} mensajes. Inicia una nueva conversación para continuar.
               </p>
             </div>
@@ -172,7 +172,7 @@ function ChatInner() {
       </div>
 
       {/* Input */}
-      <div className="border-t border-border/40 bg-surface p-4">
+      <div className="border-t border-[#1e2c31] bg-[#02090a] p-4">
         <div className="mx-auto flex max-w-2xl items-end gap-2">
           {limitReached ? (
             <div className="flex flex-1 items-center justify-center py-1">
@@ -190,7 +190,7 @@ function ChatInner() {
                 onKeyDown={handleKeyDown}
                 placeholder="Describe qué manga buscas..."
                 rows={1}
-                className="flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="flex-1 resize-none rounded-lg border border-[#1e2c31] bg-[#061a1c] px-3 py-2 text-base text-white placeholder:text-[#71717a] focus:outline-none focus:ring-2 focus:ring-neon/50"
                 style={{ maxHeight: "120px" }}
                 onInput={(e) => {
                   const target = e.target as HTMLTextAreaElement;
@@ -202,7 +202,7 @@ function ChatInner() {
                 size="icon"
                 onClick={handleSend}
                 disabled={!input.trim() || isStreaming}
-                className="shrink-0 bg-primary"
+                className="shrink-0 bg-neon text-black hover:bg-neon/90"
               >
                 <SendHorizontal className="h-4 w-4" />
               </Button>
@@ -210,7 +210,7 @@ function ChatInner() {
           )}
         </div>
         {!limitReached && userTurns > 0 && (
-          <div className="mx-auto mt-1.5 flex max-w-2xl text-[10px] text-muted-foreground">
+          <div className="mx-auto mt-1.5 flex max-w-2xl text-[10px] text-[#71717a]">
             <span>{userTurns}/{MAX_USER_TURNS} mensajes</span>
           </div>
         )}

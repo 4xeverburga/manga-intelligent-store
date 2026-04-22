@@ -5,6 +5,8 @@ interface Input {
   orderId: string;
   transactionId: string;
   merchantId: string;
+  purchaseNumber: string;
+  amount: number;
 }
 
 export class ConfirmOrder {
@@ -18,11 +20,13 @@ export class ConfirmOrder {
   ): Promise<
     { success: true; transactionId: string } | { success: false; errorMessage: string }
   > {
-    // 1. Verify payment with Niubiz
-    const paymentResult = await this.paymentProvider.verifyTransaction(
-      input.transactionId,
-      input.merchantId
-    );
+    // 1. Authorize payment with Niubiz
+    const paymentResult = await this.paymentProvider.authorizeTransaction({
+      transactionToken: input.transactionId,
+      merchantId: input.merchantId,
+      purchaseNumber: input.purchaseNumber,
+      amount: input.amount,
+    });
 
     if (!paymentResult.success) {
       // Payment failed — release the reservation

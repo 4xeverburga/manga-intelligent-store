@@ -27,7 +27,7 @@ function ProfileCard({ profile }: { profile: UserInsight }) {
   const isRefreshing = loadingPlatform === profile.platform;
 
   return (
-    <div className="rounded-lg border border-border/40 bg-background/50 p-3">
+    <div className="rounded-lg border border-[#1e2c31] bg-[#061a1c] p-3">
       {/* Header */}
       <div className="flex items-center gap-2">
         {profile.avatarUrl ? (
@@ -36,16 +36,16 @@ function ProfileCard({ profile }: { profile: UserInsight }) {
             alt={profile.username}
             width={36}
             height={36}
-            className="size-9 rounded-full object-cover ring-2 ring-primary/20"
+            className="size-9 rounded-full object-cover ring-2 ring-neon/20"
           />
         ) : (
-          <div className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+          <div className="flex size-9 items-center justify-center rounded-full bg-neon/10 text-xs font-bold text-neon">
             {profile.username.charAt(0).toUpperCase()}
           </div>
         )}
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium">{profile.username}</p>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[10px] text-[#71717a]">
             {PLATFORMS.find((p) => p.id === profile.platform)?.label}
           </p>
         </div>
@@ -66,7 +66,7 @@ function ProfileCard({ profile }: { profile: UserInsight }) {
           <Button
             variant="ghost"
             size="icon"
-            className="size-6 text-muted-foreground hover:text-destructive"
+            className="size-6 text-[#71717a] hover:text-destructive"
             onClick={() => disconnectProfile(profile.platform)}
           >
             <X className="size-3" />
@@ -76,7 +76,7 @@ function ProfileCard({ profile }: { profile: UserInsight }) {
 
       {/* Bio */}
       {profile.bio && (
-        <p className="mt-2 text-[11px] text-muted-foreground line-clamp-2">
+        <p className="mt-2 text-[11px] text-[#a1a1aa] line-clamp-2">
           {profile.bio}
         </p>
       )}
@@ -156,9 +156,9 @@ export function InsightsSidebar() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 border-b border-border/40 px-4 py-3">
-        <User className="h-4 w-4 text-primary" />
-        <h2 className="text-sm font-semibold">Tus Perfiles</h2>
+      <div className="flex items-center gap-2 border-b border-[#1e2c31] px-4 py-3">
+        <User className="h-4 w-4 text-neon" />
+        <h2 className="text-sm font-semibold text-white">Tus Perfiles</h2>
         {connectedList.length > 0 && (
           <Badge variant="secondary" className="ml-auto text-[10px]">
             {connectedList.length}
@@ -175,9 +175,9 @@ export function InsightsSidebar() {
 
           {/* Loading indicator */}
           {loadingPlatform && !profiles[loadingPlatform] && (
-            <div className="flex flex-col items-center gap-2 rounded-lg border border-border/40 bg-background/50 p-4">
-              <Loader2 className="size-6 animate-spin text-primary" />
-              <p className="text-xs text-muted-foreground">
+            <div className="flex flex-col items-center gap-2 rounded-lg border border-[#1e2c31] bg-[#061a1c] p-4">
+              <Loader2 className="size-6 animate-spin text-neon" />
+              <p className="text-xs text-[#a1a1aa]">
                 Conectando{" "}
                 {PLATFORMS.find((p) => p.id === loadingPlatform)?.label}...
               </p>
@@ -255,10 +255,10 @@ export function InsightsSidebar() {
             !showRedditForm &&
             !loadingPlatform && (
               <div className="flex flex-col items-center gap-2 py-6 text-center">
-                <div className="flex size-14 items-center justify-center rounded-full bg-muted">
+                <div className="flex size-14 items-center justify-center rounded-full bg-[#102620]">
                   <User className="size-7 opacity-30" />
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-[#71717a]">
                   Vincula tus cuentas para recomendaciones personalizadas
                 </p>
               </div>

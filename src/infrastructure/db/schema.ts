@@ -114,6 +114,7 @@ export type InsertInventory = typeof inventory.$inferInsert;
 // ── Orders ───────────────────────────────────────────
 export const orders = pgTable("orders", {
   id: uuid("id").primaryKey().defaultRandom(),
+  purchaseNumber: integer("purchase_number").notNull().unique(),
   niubizTransactionId: text("niubiz_transaction_id"),
   status: text("status").notNull().default("pending"),
   totalAmount: real("total_amount").notNull(),

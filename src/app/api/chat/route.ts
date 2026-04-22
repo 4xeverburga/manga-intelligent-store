@@ -1,6 +1,6 @@
 import { streamText, stepCountIs, convertToModelMessages } from "ai";
 import { google } from "@ai-sdk/google";
-import { SupabaseMangaRepository } from "@/infrastructure/db/DrizzleMangaRepository";
+import { SupabaseMangaRepository } from "@/infrastructure/db/SupabaseMangaRepository";
 import { GeminiAdapter } from "@/infrastructure/ai/GeminiAdapter";
 import { SemanticSearchMangas } from "@/core/application/use-cases/SemanticSearchMangas";
 import { buildSystemPrompt } from "./buildSystemPrompt";

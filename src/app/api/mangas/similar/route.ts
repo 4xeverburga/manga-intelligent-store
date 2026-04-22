@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SupabaseMangaRepository } from "@/infrastructure/db/DrizzleMangaRepository";
+import { SupabaseMangaRepository } from "@/infrastructure/db/SupabaseMangaRepository";
 import { FindSimilarMangas } from "@/core/application/use-cases/FindSimilarMangas";
 
 const findSimilarMangas = new FindSimilarMangas(new SupabaseMangaRepository());

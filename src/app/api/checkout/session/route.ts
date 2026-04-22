@@ -8,7 +8,7 @@ const createCheckoutSession = new CreateCheckoutSession(new NiubizAdapter());
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { orderId, purchaseNumber } = body;
+    const { orderId } = body;
 
     if (!orderId || typeof orderId !== "string") {
       return NextResponse.json(
@@ -17,17 +17,10 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!purchaseNumber || typeof purchaseNumber !== "string") {
-      return NextResponse.json(
-        { error: "purchaseNumber is required" },
-        { status: 400 }
-      );
-    }
-
-    // Look up authoritative total from DB — never trust client amount
+    // Look up authoritative total and purchase_number from DB
     const { data: order } = await supabase
       .from("orders")
-      .select("total_amount, status")
+      .select("total_amount, status, purchase_number")
       .eq("id", orderId)
       .single();
 
@@ -51,6 +44,7 @@ export async function POST(req: Request) {
     }
 
     const amount = order.total_amount as number;
+    const purchaseNumber = String(order.purchase_number);
 
     const session = await createCheckoutSession.execute({ amount, orderId: purchaseNumber });
 
@@ -58,6 +52,7 @@ export async function POST(req: Request) {
       sessionToken: session.sessionToken,
       merchantId: session.merchantId,
       amount,
+      purchaseNumber,
     });
   } catch (error) {
     console.error("Checkout session error:", error);

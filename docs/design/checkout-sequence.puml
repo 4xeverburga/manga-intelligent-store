@@ -1,0 +1,179 @@
+@startuml checkout-sequence
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 220
+
+title Checkout Transaction — Sequence Diagram
+
+actor       User         as U
+participant "Browser\n(React + Zustand)" as B  #E8F5E9
+participant "sessionStorage"             as SS #FFF9C4
+database    "URL params"                 as URL #E3F2FD
+participant "Next.js API\nRoutes"        as API #E8EAF6
+participant "Supabase\n(PostgreSQL)"     as DB  #FCE4EC
+participant "Niubiz\n(Payment Gateway)"  as NIU #FFF3E0
+
+== Phase 1 — Reserve Stock ==
+
+U -> B : Click "Finalizar Compra"
+activate B
+
+B -> API : POST /api/checkout/reserve\n{items: [{volumeId, title, qty}]}
+activate API
+
+API -> DB : SELECT price FROM manga_volumes\n(re-fetch authoritative prices)
+DB --> API : prices[]
+
+API -> DB : RPC reserve_stock(\n  totalAmount, itemCount,\n  items[], ttl=300s\n)
+note right of DB
+  **ATOMIC PL/pgSQL**
+  1. INSERT orders (status='pending', expires_at)
+  2. FOR each item:
+     - SELECT stock FOR UPDATE
+     - Decrement inventory.stock
+     - INSERT order_items
+  3. RETURN {order_id, expires_at, purchase_number}
+end note
+DB --> API : {order_id, expires_at, purchase_number}
+
+API --> B : 200 {orderId, expiresAt, purchaseNumber}
+deactivate API
+
+B -> SS : SET checkout_stock = stockSnapshot
+B -> URL : Navigate to /checkout?\norderId=...&expiresAt=...&purchaseNumber=...
+
+note over DB
+  **DB State:** order.status = 'pending'
+  inventory.stock decremented
+  order_items.reserved_from_stock tracked
+  **TTL:** 5 min auto-expire
+end note
+
+== Phase 2 — Delivery + Payment Session ==
+
+U -> B : Fill email, phone, address\nClick "Pagar"
+activate B
+
+B -> API : POST /api/checkout/delivery\n{orderId, email, phone, address}
+activate API
+API -> DB : UPDATE orders SET email, phone, address
+DB --> API : ok
+API --> B : 200 {ok}
+deactivate API
+
+B -> API : POST /api/checkout/session\n{orderId}
+activate API
+API -> DB : SELECT total_amount, status,\npurchase_number FROM orders
+DB --> API : {amount, 'pending', purchaseNumber}
+
+API -> NIU : GET /api.security/v1/security\n(Basic Auth)
+NIU --> API : accessToken
+
+API -> NIU : POST /api.ecommerce/v2/\ntoken/session/{merchantId}\n{amount, channel, antifraud}
+NIU --> API : {sessionKey, expirationTime}
+
+API --> B : 200 {sessionToken, merchantId,\namount, purchaseNumber}
+deactivate API
+
+B -> SS : SET checkout_ctx =\n{orderId, merchantId, purchaseNumber}
+
+B -> B : VisanetCheckout.configure({\n  sessionToken, merchantId,\n  purchaseNumber, amount,\n  action: /api/checkout/callback\n})
+B -> B : VisanetCheckout.open()
+
+note over B
+  **Browser State:**
+  status = 'paying'
+  checkout_ctx in sessionStorage
+end note
+
+== Phase 3 — Niubiz Lightbox ==
+
+U -> NIU : Enter card details\nin Lightbox iframe
+activate NIU
+
+alt User completes payment
+    NIU -> API : POST /api/checkout/callback\n(form: transactionToken)
+    activate API
+    API -> URL : 303 Redirect → /checkout?\nstatus=callback&transactionToken=...
+    deactivate API
+    
+    NIU --> B : (page navigates away)
+    deactivate NIU
+    
+else User cancels / timeout
+    NIU -> URL : Redirect → /checkout?status=timeout
+    deactivate NIU
+end
+
+== Phase 4 — Verify & Authorize ==
+
+B -> B : Page reloads.\nDetect status=callback from URL
+activate B
+B -> SS : GET checkout_ctx\n→ {orderId, merchantId, purchaseNumber}
+B -> SS : DELETE checkout_ctx
+
+B -> API : POST /api/checkout/verify\n{transactionId, merchantId,\norderId, purchaseNumber}
+activate API
+
+API -> DB : SELECT total_amount,\npurchase_number FROM orders
+DB --> API : {amount, purchaseNumber}
+
+API -> NIU : GET /api.security/v1/security
+NIU --> API : accessToken
+
+API -> NIU : **POST** /api.authorization/v3/\nauthorization/ecommerce/{merchantId}\n{tokenId, purchaseNumber,\namount, currency}
+activate NIU
+NIU --> API : {actionCode, TRANSACTION_ID,\nSTATUS, authorizedAmount}
+deactivate NIU
+
+alt actionCode == "000" (Approved)
+    API -> DB : RPC confirm_order(\n  orderId, transactionId\n)
+    note right of DB
+      UPDATE orders
+      SET status='completed',
+          niubiz_transaction_id,
+          expires_at=NULL
+    end note
+    DB --> API : {confirmed: true}
+    API --> B : 200 {success: true,\ntransactionId, amount}
+    
+    B -> B : clearCart()\nsetStatus('success')
+    B --> U : Show success screen\n"¡Compra realizada!\nMonto: S/ {amount}"
+
+else actionCode != "000" (Denied)
+    API -> DB : RPC release_reservation(orderId)
+    note right of DB
+      Restore inventory.stock
+      SET order.status='expired'
+    end note
+    DB --> API : {released: true}
+    API --> B : 200 {success: false,\nerrorMessage}
+    
+    B --> U : Show error\n"Transacción no aprobada"
+end
+
+deactivate API
+deactivate B
+
+== Compensating Actions (Background) ==
+
+note over DB
+  **pg_cron (every 60s):**
+  cleanup_expired_reservations()
+  → finds orders WHERE status='pending'
+    AND expires_at < now()
+  → calls release_reservation() for each
+  → restores inventory.stock
+  → marks order.status='expired'
+end note
+
+note over B
+  **beforeunload listener:**
+  If status='reserved' → sendBeacon
+  POST /api/checkout/release {orderId}
+  (best-effort, not guaranteed)
+end note
+
+@enduml

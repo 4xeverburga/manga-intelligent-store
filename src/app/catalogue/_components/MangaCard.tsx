@@ -22,7 +22,7 @@ interface MangaCardProps {
 }
 
 function getScoreColor(score: number) {
-  if (score >= 8) return "bg-emerald-500/20 text-emerald-400 ring-emerald-500/30";
+  if (score >= 8) return "bg-neon/20 text-neon ring-neon/30";
   if (score >= 6) return "bg-amber-500/20 text-amber-400 ring-amber-500/30";
   return "bg-red-500/20 text-red-400 ring-red-500/30";
 }
@@ -34,7 +34,10 @@ export function MangaCard({ manga, onFindSimilar }: MangaCardProps) {
   return (
     <motion.div
       variants={fadeIn}
-      className="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10 transition-shadow hover:shadow-lg hover:shadow-primary/5 hover:ring-primary/20"
+      className="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border border-[#1e2c31] bg-[#02090a] transition-all duration-300 hover:border-neon/20"
+      style={{
+        boxShadow: "rgba(0,0,0,0.1) 0px 0px 0px 1px, rgba(0,0,0,0.1) 0px 2px 2px, rgba(0,0,0,0.1) 0px 4px 4px, rgba(0,0,0,0.1) 0px 8px 8px, rgba(255,255,255,0.03) 0px 1px 0px inset",
+      }}
       onClick={() => router.push(`/catalogue/${manga.id}`)}
     >
       {/* Cover image */}
@@ -72,14 +75,14 @@ export function MangaCard({ manga, onFindSimilar }: MangaCardProps) {
             </Button>
             <Button
               size="icon-sm"
-              variant="outline"
-              className="bg-background/80 backdrop-blur-sm"
+              variant="secondary"
+              className="bg-[#102620]/80 backdrop-blur-sm border border-[#1e2c31]"
               onClick={(e) => {
                 e.stopPropagation();
                 onFindSimilar();
               }}
             >
-              <Sparkles className="size-3.5" />
+              <Sparkles className="size-3.5 text-neon" />
             </Button>
           </div>
         </div>
@@ -87,12 +90,12 @@ export function MangaCard({ manga, onFindSimilar }: MangaCardProps) {
 
       {/* Info */}
       <div className="flex flex-1 flex-col gap-1.5 p-3">
-        <h3 className="line-clamp-2 text-sm font-medium leading-tight text-foreground">
+        <h3 className="line-clamp-2 text-sm font-medium leading-tight text-white">
           {manga.title}
         </h3>
         <div className="mt-auto flex flex-wrap gap-1">
           {manga.genres.slice(0, 3).map((genre) => (
-            <Badge key={genre} variant="secondary" className="text-[10px] px-1.5 py-0">
+            <Badge key={genre} variant="secondary" className="text-[10px] px-1.5 py-0 bg-white/10 text-white/70 border-0">
               {genre}
             </Badge>
           ))}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { SupabaseMangaRepository } from "@/infrastructure/db/DrizzleMangaRepository";
+import { SupabaseMangaRepository } from "@/infrastructure/db/SupabaseMangaRepository";
 import { FindSimilarMangas } from "@/core/application/use-cases/FindSimilarMangas";
 
 const repo = new SupabaseMangaRepository();
