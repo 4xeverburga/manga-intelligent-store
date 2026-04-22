@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   Loader2,
+  Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -30,6 +31,12 @@ export function SuccessScreen({
           {new Date().toLocaleDateString("es-PE")}
         </p>
         <Separator className="my-2 w-48" />
+        <div className="flex max-w-xs flex-col items-center gap-2 text-center">
+          <Mail className="h-5 w-5 text-[#71717a]" />
+          <p className="text-xs text-[#71717a]">
+            La confirmación por correo se implementará próximamente. El seguimiento de tu pedido se realizará según las instrucciones que recibirás por email. Permanece atento.
+          </p>
+        </div>
         <Link href="/app">
           <Button className="rounded-full bg-white text-black hover:bg-white/90">
             <ArrowLeft className="mr-2 h-4 w-4" />
