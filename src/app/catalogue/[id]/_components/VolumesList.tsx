@@ -191,13 +191,22 @@ function VolumeRow({
       </span>
 
       {/* Availability */}
-      <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
-        <AvailIcon className={`size-4 ${avail.color}`} />
-        <div className="text-right">
-          <p className={`text-xs font-medium ${avail.color}`}>{avail.label}</p>
-          {avail.delivery && (
-            <p className="text-[10px] text-[#71717a]">{avail.delivery}</p>
-          )}
+      <div className="hidden shrink-0 flex-col items-end gap-0.5 sm:flex">
+        <div className="flex items-center gap-1">
+          <AvailIcon className={`size-4 ${avail.color}`} />
+          <span className={`text-xs font-medium ${avail.color}`}>{avail.label}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Package className="size-3 text-[#71717a]" />
+          <span className="text-[10px] text-[#71717a]">
+            {vol.stock > 0 && vol.canBeDropshipped
+              ? `${vol.stock} en stock · Bajo pedido`
+              : vol.stock > 0
+                ? `${vol.stock} en stock`
+                : vol.canBeDropshipped
+                  ? "Bajo pedido"
+                  : "Sin stock"}
+          </span>
         </div>
       </div>
 
