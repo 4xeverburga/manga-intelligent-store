@@ -95,7 +95,7 @@ export function PaymentSection({
             Entorno de desarrollo — No se realizará un cobro real
           </p>
           <p className="mt-1 text-center text-[10px] text-[#71717a]">
-            Tarjeta de prueba: 4474 1100 0000 0004 &middot; Exp: 12/25 &middot;
+            Tarjeta de prueba: 4474118355632240 &middot; Exp: 03/2028 &middot;
             CVV: 111
           </p>
         </>

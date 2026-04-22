@@ -6,6 +6,8 @@ import { VolumesList } from "@/app/catalogue/[id]/_components/VolumesList";
 import { GenreCarousel } from "@/app/catalogue/[id]/_components/GenreCarousel";
 import { supabase } from "@/infrastructure/db/client";
 
+export const dynamic = "force-dynamic";
+
 interface Props {
   params: Promise<{ id: string }>;
 }

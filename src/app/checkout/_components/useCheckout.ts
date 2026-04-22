@@ -250,7 +250,7 @@ export function useCheckout() {
         merchantid: merchantId,
         purchasenumber: pn,
         amount: Number(amount).toFixed(2),
-        cardholderemail: email || "customer@hablemosmanga.com",
+        cardholderemail: email,
         expirationminutes: Math.ceil(
           (Number(process.env.NEXT_PUBLIC_RESERVATION_TTL_SECONDS) || 300) / 60
         ),
