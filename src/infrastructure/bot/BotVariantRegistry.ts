@@ -63,6 +63,10 @@ const DEFAULT_VARIANT_ID = "av0.1";
 
 // ---------------------------------------------------------------------------
 // Registry adapter
+//
+// ★ This file is the SINGLE SOURCE OF TRUTH for bot variants.
+// ★ To add/rename/remove a variant, edit the VARIANTS map above.
+// ★ No other file needs to change — env.ts accepts any string.
 // ---------------------------------------------------------------------------
 
 export class BotVariantRegistry implements IBotVariantRegistry {
@@ -70,10 +74,15 @@ export class BotVariantRegistry implements IBotVariantRegistry {
     const variant = VARIANTS[variantId];
     if (!variant) {
       console.warn(
-        `[BotVariantRegistry] Unknown variant "${variantId}", falling back to "${DEFAULT_VARIANT_ID}"`
+        `[BotVariantRegistry] Unknown variant "${variantId}", falling back to "${DEFAULT_VARIANT_ID}". Known: ${Object.keys(VARIANTS).join(", ")}`,
       );
       return VARIANTS[DEFAULT_VARIANT_ID];
     }
     return variant;
+  }
+
+  /** Returns all registered variant IDs (useful for diagnostics / boot logs). */
+  getKnownVariantIds(): string[] {
+    return Object.keys(VARIANTS);
   }
 }
