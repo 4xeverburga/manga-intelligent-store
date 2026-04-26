@@ -24,16 +24,7 @@ const ALL_TOOLS: BotToolName[] = [
 const VARIANTS: Record<string, BotVariant> = {
   "av0.1": {
     id: "av0.1",
-    modelId: "gemini-2.0-flash",
-    temperature: undefined,
-    maxSteps: 3,
-    enabledTools: ALL_TOOLS,
-    systemPrompt: SYSTEM_PROMPT,
-  },
-
-  "av0.2": {
-    id: "av0.2",
-    modelId: "gemini-2.0-flash-lite",
+    modelId: "gemini-3.1-flash-lite-preview",
     temperature: undefined,
     maxSteps: 3,
     enabledTools: ALL_TOOLS,
@@ -42,21 +33,12 @@ const VARIANTS: Record<string, BotVariant> = {
 
   "bv0.1": {
     id: "bv0.1",
-    modelId: "gemini-2.5-flash",
+    modelId: "gemini-3.1-flash-lite-preview",
     temperature: undefined,
     maxSteps: 3,
     enabledTools: ALL_TOOLS,
     systemPrompt: SYSTEM_PROMPT,
-  },
-
-  "bv0.2": {
-    id: "bv0.2",
-    modelId: "gemini-2.5-flash-lite-preview",
-    temperature: undefined,
-    maxSteps: 3,
-    enabledTools: ALL_TOOLS,
-    systemPrompt: SYSTEM_PROMPT,
-  },
+  }
 };
 
 const DEFAULT_VARIANT_ID = "av0.1";
