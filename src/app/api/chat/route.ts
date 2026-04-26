@@ -96,11 +96,22 @@ export async function POST(req: Request) {
 
   return result.toUIMessageStreamResponse({
     onError: (error: unknown) => {
-      const statusCode =
+      // The SDK wraps retried errors in AI_RetryError — the real status
+      // lives on `lastError`, not the top-level object.
+      const source =
         error != null &&
         typeof error === "object" &&
-        "statusCode" in error
-          ? (error as { statusCode: number }).statusCode
+        "lastError" in error &&
+        error.lastError != null &&
+        typeof error.lastError === "object"
+          ? error.lastError
+          : error;
+
+      const statusCode =
+        source != null &&
+        typeof source === "object" &&
+        "statusCode" in source
+          ? (source as { statusCode: number }).statusCode
           : undefined;
 
       if (statusCode === 503) {
