@@ -13,8 +13,6 @@
     "db:seed": "tsx scripts/seed.ts",
     "db:seed:volumes": "tsx scripts/seed-volumes.ts",
     "db:seed:inventory": "tsx scripts/seed-inventory.ts",
-    "docker:build": "docker build -t hablemos-manga .",
-    "docker:run": "docker run -p 3000:3000 --env-file .env.local hablemos-manga",
     "test": "vitest run",
     "test:watch": "vitest"
   },
