@@ -57,5 +57,20 @@ export async function POST(req: Request) {
       : undefined,
   });
 
-  return result.toUIMessageStreamResponse();
+  return result.toUIMessageStreamResponse({
+    onError: (error: unknown) => {
+      const statusCode =
+        error != null &&
+        typeof error === "object" &&
+        "statusCode" in error
+          ? (error as { statusCode: number }).statusCode
+          : undefined;
+
+      if (statusCode === 503) {
+        return "El modelo en uso se encuentra bajo alta demanda. Por favor, inténtalo de nuevo en unos segundos.";
+      }
+
+      return "Ocurrió un error al procesar tu mensaje. Por favor, inténtalo de nuevo.";
+    },
+  });
 }
