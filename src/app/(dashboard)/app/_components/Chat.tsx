@@ -95,7 +95,7 @@ function ChatInner() {
     []
   );
 
-  const { messages, sendMessage, status, setMessages } = useChat({
+  const { messages, sendMessage, status, setMessages, error } = useChat({
     transport,
     messages: initialMessages,
   });
@@ -157,6 +157,18 @@ function ChatInner() {
             <div className="flex gap-2 text-[#a1a1aa]">
               <div className="h-6 w-6 animate-pulse rounded-full bg-neon/30" />
               <span className="text-base italic">Pensando...</span>
+            </div>
+          )}
+
+          {/* Stream error */}
+          {error && !isStreaming && (
+            <div className="flex gap-3">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#102620] text-xs font-bold text-neon">
+                AI
+              </div>
+              <div className="rounded-lg bg-destructive/10 px-3 py-2 text-base text-destructive">
+                {error.message}
+              </div>
             </div>
           )}
 
