@@ -166,7 +166,7 @@ function ChatInner() {
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#102620] text-xs font-bold text-neon">
                 AI
               </div>
-              <div className="rounded-lg bg-destructive/10 px-3 py-2 text-base text-destructive">
+              <div className="rounded-lg border border-[#1e2c31] bg-[#061a1c] px-3 py-2 text-base text-[#a1a1aa]">
                 {error.message}
               </div>
             </div>

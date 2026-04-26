@@ -109,10 +109,16 @@ Naming convention: `<slot><semver>` — `a*` = baseline, `b*` = challenger. Bump
 
 ### Styling
 
-- Tailwind utility classes — prefer dark theme defaults
-- Shadcn/UI components live in `src/components/ui/`
+**`DESIGN.md` is the single source of truth for all visual decisions.** Read it before writing or modifying any UI code — no exceptions.
+
+- Tailwind utility classes — dark-first, using the exact hex values from `DESIGN.md`
+- Shadcn/UI components live in `src/components/ui/` — override default tokens (e.g., `destructive`) with design-system colors
 - Conditional classes via `cn()` from `@/lib/utils`
-- Follow `DESIGN.md` for colors, typography, and component patterns
+- **No warm colors** (red, orange, yellow) — the palette is strictly cool (greens, teals, zinc neutrals)
+- Surface hierarchy: Void `#000` → Deep Teal `#02090A` → Dark Forest `#061A1C` → Forest `#102620`
+- Accent: Neon Green `#36F4A4` — focus rings and small highlights only
+- Text: White `#FFF` primary, `#A1A1AA` muted, `#71717A` tertiary
+- Borders: `#1E2C31` on dark surfaces
 
 ### Environment Variables
 
