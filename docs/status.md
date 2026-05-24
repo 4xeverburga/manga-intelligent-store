@@ -2,10 +2,8 @@
 
 ## Done
 
-- [x] Initialized status tracking structure in `docs/status.md`.
 - [x] Stock count displayed in catalogue volume list (consistent with cart sidebar style).
 - [x] Post-purchase success screen shows email confirmation notice.
-- [x] Consolidated agent instructions: merged `.github/copilot-instructions.md` into root `AGENTS.md`.
 
 ## Pending
 
