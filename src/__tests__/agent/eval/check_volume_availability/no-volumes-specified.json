@@ -1,0 +1,12 @@
+{
+  "id": "no-volumes-specified",
+  "description": "User asks about availability of a manga without specifying volume numbers",
+  "messages": [
+    { "role": "user", "content": "Hola, me interesa Berserk" },
+    {
+      "role": "assistant",
+      "content": "¡Hola! **Berserk** es una obra maestra del seinen oscuro. ¿Te gustaría que revise la disponibilidad de algún volumen?"
+    },
+    { "role": "user", "content": "Sí, qué volúmenes tienen disponibles?" }
+  ]
+}

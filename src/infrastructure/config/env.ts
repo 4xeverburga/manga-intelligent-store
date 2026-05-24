@@ -13,7 +13,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.url(),
   // Free-form string — validated against the registry at runtime, not here.
   // Edit variants in: src/infrastructure/bot/BotVariantRegistry.ts
-  CHAT_BOT_VARIANT: z.string().optional(),
+  CHAT_BOT_VARIANT: z.string(),
   SEMANTIC_SEARCH_LIMIT: z.coerce.number().int().positive(),
   SEMANTIC_SEARCH_THRESHOLD: z.coerce.number().min(0).max(1),
   SIMILAR_MANGAS_LIMIT: z.coerce.number().int().positive(),

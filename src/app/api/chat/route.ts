@@ -53,7 +53,7 @@ export async function POST(req: Request) {
     allMessages.length > maxCtx ? allMessages.slice(-maxCtx) : allMessages;
 
   // --- Resolve the active bot variant ---
-  const variantId = process.env.CHAT_BOT_VARIANT ?? "av0.1";
+  const variantId = process.env.CHAT_BOT_VARIANT || "NotAvailable";
   const variant = variantRegistry.resolve(variantId);
 
   // Build the tool set from the variant's enabledTools list

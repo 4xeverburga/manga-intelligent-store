@@ -1,0 +1,7 @@
+{
+  "id": "ambiguous-title",
+  "description": "User asks about a manga with an ambiguous name that could match multiple titles",
+  "messages": [
+    { "role": "user", "content": "Quiero ver disponibilidad del manga Blue" }
+  ]
+}

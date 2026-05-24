@@ -16,6 +16,7 @@
 # next.js
 /.next/
 /out/
+/eval-results/
 
 # production
 /build

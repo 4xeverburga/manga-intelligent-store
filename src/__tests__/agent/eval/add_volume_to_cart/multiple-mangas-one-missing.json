@@ -1,0 +1,20 @@
+{
+  "id": "multiple-mangas-one-missing",
+  "description": "User wants to add 3 mangas to cart: 2 exist in the DB (discussed previously), 1 does not exist. Bot should add the 2 and explain why the 3rd failed.",
+  "messages": [
+    { "role": "user", "content": "Quiero algo de acción y seinen" },
+    {
+      "role": "assistant",
+      "content": "Te recomiendo **Berserk** y **Vagabond**, ambos son seinen de acción increíbles. ¿Quieres que revise stock?"
+    },
+    { "role": "user", "content": "Sí, se ven bien ambos" },
+    {
+      "role": "assistant",
+      "content": "Ambos tienen el volumen 1 disponible. **Berserk Vol. 1** a S/ 35.00 (3 en stock) y **Vagabond Vol. 1** a S/ 38.00 (2 en stock). ¿Los agrego al carrito?"
+    },
+    {
+      "role": "user",
+      "content": "Agrega el vol 1 de Berserk, el vol 1 de Vagabond, y también el vol 1 de Dragon Ball Super Ultra Instinct Saga"
+    }
+  ]
+}
