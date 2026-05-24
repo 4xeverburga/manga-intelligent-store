@@ -202,7 +202,7 @@ function ChatInner() {
                 onKeyDown={handleKeyDown}
                 placeholder="Describe qué manga buscas..."
                 rows={1}
-                className="flex-1 resize-none rounded-lg border border-[#1e2c31] bg-[#061a1c] px-3 py-2 text-base text-white placeholder:text-[#71717a] focus:outline-none focus:ring-2 focus:ring-neon/50"
+                className="flex-1 resize-none rounded-lg border border-[#1e2c31] bg-[#061a1c] px-3 py-2 text-base text-white placeholder:text-[#71717a] focus:outline-none focus:ring-2 focus:ring-neon/50 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 style={{ maxHeight: "120px" }}
                 onInput={(e) => {
                   const target = e.target as HTMLTextAreaElement;
