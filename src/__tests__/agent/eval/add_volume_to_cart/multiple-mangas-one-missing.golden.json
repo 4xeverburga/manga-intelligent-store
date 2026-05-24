@@ -1,0 +1,10 @@
+{
+  "expect": {
+    "minSteps": 1,
+    "toolsUsed": ["add_volume_to_cart"],
+    "toolResults": [
+      { "tool": "add_volume_to_cart", "field": "success", "value": true, "count": 2 },
+      { "tool": "add_volume_to_cart", "field": "success", "value": false, "count": 1 }
+    ]
+  }
+}

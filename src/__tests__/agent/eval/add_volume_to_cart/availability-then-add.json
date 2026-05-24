@@ -1,17 +1,7 @@
 {
   "id": "availability-then-add",
-  "description": "User checks availability first, then asks to add to cart. The prior assistant turns are fabricated (Gantz may not be in DB).",
+  "description": "User asks to add a manga volume directly. Bot should call check_volume_availability first, then add_volume_to_cart if available. Gantz is not in the DB so the tool should return not found.",
   "messages": [
-    { "role": "user", "content": "Tienen Gantz?" },
-    {
-      "role": "assistant",
-      "content": "Sí, **Gantz** está en nuestra tienda. ¿Quieres que revise qué volúmenes tenemos disponibles?"
-    },
-    { "role": "user", "content": "Sí, revisa" },
-    {
-      "role": "assistant",
-      "content": "Tenemos el Vol. 1 disponible con 2 unidades en stock a S/ 32.00. ¿Lo agrego a tu carrito?"
-    },
-    { "role": "user", "content": "Dale, agrégalo" }
+    { "role": "user", "content": "Agrega el volumen 1 de Gantz al carrito" }
   ]
 }
