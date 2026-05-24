@@ -132,7 +132,11 @@ function CartItemRow({
   );
 }
 
-export function CartSidebar() {
+interface CartSidebarProps {
+  onClose?: () => void;
+}
+
+export function CartSidebar({ onClose }: CartSidebarProps) {
   const router = useRouter();
   const totalItems = useCartStore(selectTotalItems);
   const totalPrice = useCartStore(selectTotalPrice);
@@ -228,9 +232,20 @@ export function CartSidebar() {
         <ShoppingCart className="h-4 w-4 text-neon" />
         <h2 className="text-sm font-semibold text-white">Tu Carrito</h2>
         {totalItems > 0 && (
-          <Badge variant="secondary" className="ml-auto text-xs">
+          <Badge variant="secondary" className="text-xs">
             {totalItems}
           </Badge>
+        )}
+        {onClose && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="ml-auto"
+            onClick={onClose}
+          >
+            <X className="h-4 w-4" />
+            <span className="sr-only">Cerrar</span>
+          </Button>
         )}
       </div>
 
