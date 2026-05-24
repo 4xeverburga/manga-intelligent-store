@@ -127,13 +127,6 @@ Naming convention: `<slot><semver>` — `a*` = baseline, `b*` = challenger. Bump
 - Fail fast on missing or invalid config — never silently fall back
 - **No defaults** — every variable must be explicitly defined in the environment. Never use `.default()` or `?.` fallbacks in the Zod schema or in application code.
 
-| Variable | Type | Description |
-|---|---|---|
-| `SEMANTIC_SEARCH_LIMIT` | `integer > 0` | Max results returned by semantic search (chatbot) |
-| `SEMANTIC_SEARCH_THRESHOLD` | `float 0–1` | Min similarity score for semantic search |
-| `SIMILAR_MANGAS_LIMIT` | `integer > 0` | Max similar mangas shown on the manga detail page |
-| `SIMILAR_MANGAS_THRESHOLD` | `float 0–1` | Min similarity score for similar mangas |
-
 ### Testing
 
 - Vitest — test files in `src/__tests__/`
