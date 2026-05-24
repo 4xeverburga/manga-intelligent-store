@@ -1,12 +1,11 @@
 import type { MangaWithSimilarity } from "@/core/domain/entities/Manga";
 import type { IMangaRepository } from "@/core/domain/ports/IMangaRepository";
-import { validateEnv } from "@/infrastructure/config/env";
+import { env } from "@/infrastructure/config/env";
 
 export class FindSimilarMangas {
   constructor(private mangaRepo: IMangaRepository) {}
 
   async execute(mangaId: string): Promise<MangaWithSimilarity[]> {
-    const env = validateEnv();
     const manga = await this.mangaRepo.findById(mangaId);
     if (!manga) throw new Error("Manga not found");
     if (!manga.embedding) throw new Error("Manga has no embedding");

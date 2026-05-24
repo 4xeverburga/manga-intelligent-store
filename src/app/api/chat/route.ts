@@ -1,4 +1,4 @@
-import { streamText, stepCountIs, convertToModelMessages } from "ai";
+import { streamText, stepCountIs, convertToModelMessages, type ModelMessage } from "ai";
 import { google } from "@ai-sdk/google";
 import type { BotToolName } from "@/core/domain/entities";
 import { SupabaseMangaRepository } from "@/infrastructure/db/SupabaseMangaRepository";
@@ -10,8 +10,29 @@ import { searchMangaTool } from "./tools/searchManga";
 import { getRecommendationsTool } from "./tools/getRecommendations";
 import { checkVolumeAvailabilityTool } from "./tools/checkVolumeAvailability";
 import { addVolumeToCartTool } from "./tools/addVolumeToCart";
+import { writeFileSync, mkdirSync } from "fs";
+import { join } from "path";
+import { env } from "@/infrastructure/config/env";
 
-const isDev = process.env.NEXT_PUBLIC_APP_ENVIRONMENT === "DEV";
+const isDev = env.NEXT_PUBLIC_APP_ENVIRONMENT === "DEV";
+const isCaptureEnabled = env.CHAT_CAPTURE_ENABLED;
+
+// ---------------------------------------------------------------------------
+// Capture helper — writes the message history to out/captures/ as a JSON file
+// that can be promoted to a golden or fail eval scenario.
+// Only runs when CHAT_CAPTURE_ENABLED=true.
+// ---------------------------------------------------------------------------
+function captureMessages(messages: ModelMessage[]): void {
+  try {
+    const dir = join(process.cwd(), "out", "captures");
+    mkdirSync(dir, { recursive: true });
+    const ts = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
+    const payload = { capturedAt: new Date().toISOString(), messages };
+    writeFileSync(join(dir, `${ts}.json`), JSON.stringify(payload, null, 2));
+  } catch {
+    // Never let capture failures break the chat response
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Module-level singletons (constructed once per cold start)
@@ -48,13 +69,14 @@ export async function POST(req: Request) {
   const { messages: uiMessages, profileContext } = await req.json();
   const allMessages = await convertToModelMessages(uiMessages);
 
-  const maxCtx = Number(process.env.CHAT_MAX_CONTEXT_MESSAGES) || 30;
+  const maxCtx = env.CHAT_MAX_CONTEXT_MESSAGES;
   const messages =
     allMessages.length > maxCtx ? allMessages.slice(-maxCtx) : allMessages;
 
+  if (isCaptureEnabled) captureMessages(messages);
+
   // --- Resolve the active bot variant ---
-  const variantId = process.env.CHAT_BOT_VARIANT || "NotAvailable";
-  const variant = variantRegistry.resolve(variantId);
+  const variant = variantRegistry.resolve(env.CHAT_BOT_VARIANT);
 
   // Build the tool set from the variant's enabledTools list
   const catalogue = buildToolCatalogue();

@@ -1,7 +1,7 @@
 import type { MangaWithSimilarity } from "@/core/domain/entities/Manga";
 import type { IMangaRepository } from "@/core/domain/ports/IMangaRepository";
 import type { IAIService } from "@/core/domain/ports/IAIService";
-import { validateEnv } from "@/infrastructure/config/env";
+import { env } from "@/infrastructure/config/env";
 
 interface Input {
   query: string;
@@ -16,7 +16,6 @@ export class SemanticSearchMangas {
   ) {}
 
   async execute(input: Input): Promise<MangaWithSimilarity[]> {
-    const env = validateEnv();
     const { embedding } = await this.aiService.generateEmbedding(input.query);
     const results = await this.mangaRepo.findSimilar(embedding, {
       limit: input.limit ?? env.SEMANTIC_SEARCH_LIMIT,

@@ -11,13 +11,20 @@ const envSchema = z.object({
   NIUBIZ_SECURITY_URL: z.url(),
   NIUBIZ_SESSION_URL: z.url(),
   NEXT_PUBLIC_APP_URL: z.url(),
-  // Free-form string — validated against the registry at runtime, not here.
   // Edit variants in: src/infrastructure/bot/BotVariantRegistry.ts
   CHAT_BOT_VARIANT: z.string(),
   SEMANTIC_SEARCH_LIMIT: z.coerce.number().int().positive(),
   SEMANTIC_SEARCH_THRESHOLD: z.coerce.number().min(0).max(1),
   SIMILAR_MANGAS_LIMIT: z.coerce.number().int().positive(),
   SIMILAR_MANGAS_THRESHOLD: z.coerce.number().min(0).max(1),
+  // When true, the chat route writes each request's message history to
+  // out/captures/<timestamp>.json for use as eval dataset entries.
+  // Safe to enable in any environment — does NOT affect streaming behavior.
+  CHAT_CAPTURE_ENABLED: z.coerce.boolean(),
+  // Maximum number of messages to keep in context window per chat request.
+  CHAT_MAX_CONTEXT_MESSAGES: z.coerce.number().int().positive(),
+  // Controls dev-mode logging (e.g. step-by-step tool call output).
+  NEXT_PUBLIC_APP_ENVIRONMENT: z.string(),
 });
 
 export function validateEnv() {
@@ -33,3 +40,6 @@ export function validateEnv() {
   }
   return result.data;
 }
+
+/** Pre-validated env singleton. Import this instead of calling validateEnv() directly. */
+export const env = validateEnv();
