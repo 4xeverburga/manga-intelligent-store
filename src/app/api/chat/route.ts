@@ -14,13 +14,13 @@ import { writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
 import { env } from "@/infrastructure/config/env";
 
-const isDev = env.NEXT_PUBLIC_APP_ENVIRONMENT === "DEV";
-const isCaptureEnabled = env.CHAT_CAPTURE_ENABLED;
+const isVerbose = env.NEXT_PUBLIC_APP_ENVIRONMENT !== "PRD";
+const isCaptureEnabled = env.NEXT_PUBLIC_APP_ENVIRONMENT === "TEST";
 
 // ---------------------------------------------------------------------------
 // Capture helper — writes the message history to out/captures/ as a JSON file
 // that can be promoted to a golden or fail eval scenario.
-// Only runs when CHAT_CAPTURE_ENABLED=true.
+// Only runs in TEST environment.
 // ---------------------------------------------------------------------------
 function captureMessages(messages: ModelMessage[]): void {
   try {
@@ -91,7 +91,7 @@ export async function POST(req: Request) {
     ...(variant.temperature !== undefined && { temperature: variant.temperature }),
     tools,
     stopWhen: stepCountIs(variant.maxSteps),
-    onStepFinish: isDev
+    onStepFinish: isVerbose
       ? ({ toolCalls, toolResults, text, stepNumber }) => {
           if (toolCalls?.length) {
             console.log(

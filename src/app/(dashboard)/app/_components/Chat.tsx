@@ -38,6 +38,8 @@ export function Chat() {
   return <ChatInner />;
 }
 
+const isTest = process.env.NEXT_PUBLIC_APP_ENVIRONMENT === "TEST";
+
 function ChatInner() {
   const makeOnboardingMessage = useCallback((): UIMessage => {
     const hasProfiles = Object.keys(useProfileStore.getState().profiles).length > 0;
@@ -221,9 +223,17 @@ function ChatInner() {
             </>
           )}
         </div>
-        {!limitReached && userTurns > 0 && (
-          <div className="mx-auto mt-1.5 flex max-w-2xl text-[10px] text-[#71717a]">
-            <span>{userTurns}/{MAX_USER_TURNS} mensajes</span>
+        {(!limitReached && userTurns > 0 || isTest) && (
+          <div className="mx-auto mt-1.5 flex max-w-2xl items-center gap-3 text-[10px] text-[#71717a]">
+            {userTurns > 0 && <span>{userTurns}/{MAX_USER_TURNS} mensajes</span>}
+            {isTest && (
+              <button
+                onClick={handleRestart}
+                className="text-[#36f4a4] underline underline-offset-2 hover:opacity-70"
+              >
+                [TEST] reset
+              </button>
+            )}
           </div>
         )}
       </div>

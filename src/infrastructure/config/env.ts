@@ -17,14 +17,12 @@ const envSchema = z.object({
   SEMANTIC_SEARCH_THRESHOLD: z.coerce.number().min(0).max(1),
   SIMILAR_MANGAS_LIMIT: z.coerce.number().int().positive(),
   SIMILAR_MANGAS_THRESHOLD: z.coerce.number().min(0).max(1),
-  // When true, the chat route writes each request's message history to
-  // out/captures/<timestamp>.json for use as eval dataset entries.
-  // Safe to enable in any environment — does NOT affect streaming behavior.
-  CHAT_CAPTURE_ENABLED: z.coerce.boolean(),
   // Maximum number of messages to keep in context window per chat request.
   CHAT_MAX_CONTEXT_MESSAGES: z.coerce.number().int().positive(),
-  // Controls dev-mode logging (e.g. step-by-step tool call output).
-  NEXT_PUBLIC_APP_ENVIRONMENT: z.string(),
+  // DEV  — local development, verbose logging, no capture, no reset button.
+  // TEST — QA/staging: verbose logging + chat capture + reset button in UI.
+  // PRD  — production: no logging, no capture, no reset button.
+  NEXT_PUBLIC_APP_ENVIRONMENT: z.enum(["DEV", "TEST", "PRD"]),
 });
 
 export function validateEnv() {
