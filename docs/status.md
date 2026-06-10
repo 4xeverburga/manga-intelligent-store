@@ -2,6 +2,9 @@
 
 ## Done
 
+- [x] Browser tab icon now uses the Kekeros isotype from `public/` instead of the default framework icon.
+- [x] Chat assistant now uses the branded icon asset in the message avatar.
+- [x] Chat messages now render with `react-markdown` instead of the fragile regex formatter, fixing Markdown bullets and inline formatting.
 - [x] Stock count displayed in catalogue volume list (consistent with cart sidebar style).
 - [x] Post-purchase success screen shows email confirmation notice.
 - [x] Configurable temperature parameter for the LLM model — now part of the Bot Variant system (`BotVariant` entity + `BotVariantRegistry` adapter).

@@ -30,6 +30,10 @@ export const metadata: Metadata = {
     "anime",
   ],
   metadataBase: new URL(env.NEXT_PUBLIC_APP_URL),
+  icons: {
+    icon: "/kekeros-isotype.svg",
+    shortcut: "/kekeros-isotype.svg",
+  },
   openGraph: {
     title: "Hablemos Manga",
     description: "Recomendaciones de manga potenciadas por IA",

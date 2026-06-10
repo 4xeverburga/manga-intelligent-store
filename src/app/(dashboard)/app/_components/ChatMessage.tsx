@@ -1,6 +1,10 @@
 "use client";
 
 import type { UIMessage } from "@ai-sdk/react";
+import Image from "next/image";
+import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
+import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 import { MangaToolResult } from "@/app/(dashboard)/app/_components/MangaToolResult"
 import { AddVolumeToCartResult, type AddVolumeResult } from "@/app/(dashboard)/app/_components/AddVolumeToCartResult"
@@ -16,13 +20,24 @@ export function ChatMessage({ message }: { message: UIMessage }) {
       {/* Avatar */}
       <div
         className={cn(
-          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+          "flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-bold",
           isUser
             ? "bg-white/20 text-white"
-            : "bg-[#102620] text-neon"
+            : "bg-[#102620]"
         )}
       >
-        {isUser ? "U" : "AI"}
+        {isUser ? (
+          "U"
+        ) : (
+          <Image
+            src="/brand/chat-assistant-icon.png"
+            alt="Asistente de Hablemos Manga"
+            width={28}
+            height={28}
+            className="h-full w-full object-cover"
+            priority={false}
+          />
+        )}
       </div>
 
       {/* Content */}
@@ -41,12 +56,46 @@ export function ChatMessage({ message }: { message: UIMessage }) {
                   "rounded-lg px-3 py-2 text-base leading-relaxed",
                   isUser
                     ? "inline-block bg-white text-black"
-                    : "bg-[#061a1c] prose prose-invert prose-base max-w-none"
+                    : "bg-[#061a1c]"
                 )}
-                dangerouslySetInnerHTML={{
-                  __html: formatMarkdown(part.text),
-                }}
-              />
+              >
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkBreaks]}
+                  components={{
+                    p: ({ children }) => (
+                      <p className="whitespace-pre-wrap [&:not(:last-child)]:mb-4">
+                        {children}
+                      </p>
+                    ),
+                    ul: ({ children }) => (
+                      <ul className="my-3 list-disc space-y-1 pl-5 text-left">
+                        {children}
+                      </ul>
+                    ),
+                    ol: ({ children }) => (
+                      <ol className="my-3 list-decimal space-y-1 pl-5 text-left">
+                        {children}
+                      </ol>
+                    ),
+                    li: ({ children }) => <li className="pl-1">{children}</li>,
+                    a: ({ href, children }) => (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline underline-offset-2"
+                      >
+                        {children}
+                      </a>
+                    ),
+                    strong: ({ children }) => (
+                      <strong className="font-semibold">{children}</strong>
+                    ),
+                  }}
+                >
+                  {part.text}
+                </ReactMarkdown>
+              </div>
             );
           }
 
@@ -123,11 +172,4 @@ export interface MangaResult {
   score: number;
   imageUrl: string;
   similarity: number;
-}
-
-function formatMarkdown(text: string): string {
-  return text
-    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.*?)\*/g, "<em>$1</em>")
-    .replace(/\n/g, "<br />");
 }
