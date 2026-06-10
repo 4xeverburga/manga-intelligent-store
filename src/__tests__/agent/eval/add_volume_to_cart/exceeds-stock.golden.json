@@ -1,0 +1,9 @@
+{
+  "expect": {
+    "minSteps": 1,
+    "toolsUsed": ["check_volume_availability"],
+    "toolResults": [
+      { "tool": "check_volume_availability", "field": "found", "value": true, "count": 1 }
+    ]
+  }
+}

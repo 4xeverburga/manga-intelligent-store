@@ -66,8 +66,8 @@ export function Navbar() {
               Iniciar Chat
             </Link>
             <Sheet open={cartOpen} onOpenChange={setCartOpen}>
-              <SheetContent side="right" className="w-[320px] bg-[#02090a] border-[#1e2c31] p-0">
-                <CartSidebar />
+              <SheetContent side="right" className="w-[320px] bg-[#02090a] border-[#1e2c31] p-0" showCloseButton={false}>
+                <CartSidebar onClose={() => setCartOpen(false)} />
               </SheetContent>
             </Sheet>
           </div>

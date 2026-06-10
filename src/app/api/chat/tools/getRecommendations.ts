@@ -26,11 +26,7 @@ export function getRecommendationsTool(semanticSearch: SemanticSearchMangas) {
       if (similarTo) parts.push(`Similar to: ${similarTo}`);
       const query = parts.join(". ") || "popular manga recommendations";
 
-      const results = await semanticSearch.execute({
-        query,
-        threshold: 0.3,
-        limit: 6,
-      });
+      const results = await semanticSearch.execute({ query });
       return results.map((r) => ({
         id: r.id,
         title: r.title,

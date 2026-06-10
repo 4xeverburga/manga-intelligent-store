@@ -19,11 +19,7 @@ export function searchMangaTool(semanticSearch: SemanticSearchMangas) {
         .describe("Descripción, título o géneros del manga que busca el usuario"),
     }),
     execute: async ({ query }) => {
-      const results = await semanticSearch.execute({
-        query,
-        threshold: 0.35,
-        limit: 8,
-      });
+      const results = await semanticSearch.execute({ query });
       return results.map((r) => ({
         id: r.id,
         title: r.title,

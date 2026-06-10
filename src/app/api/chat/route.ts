@@ -1,53 +1,112 @@
-import { streamText, stepCountIs, convertToModelMessages } from "ai";
+import { streamText, stepCountIs, convertToModelMessages, type ModelMessage } from "ai";
 import { google } from "@ai-sdk/google";
+import type { BotToolName } from "@/core/domain/entities";
 import { SupabaseMangaRepository } from "@/infrastructure/db/SupabaseMangaRepository";
 import { GeminiAdapter } from "@/infrastructure/ai/GeminiAdapter";
+import { BotVariantRegistry } from "@/infrastructure/bot/BotVariantRegistry";
 import { SemanticSearchMangas } from "@/core/application/use-cases/SemanticSearchMangas";
 import { buildSystemPrompt } from "./buildSystemPrompt";
 import { searchMangaTool } from "./tools/searchManga";
 import { getRecommendationsTool } from "./tools/getRecommendations";
 import { checkVolumeAvailabilityTool } from "./tools/checkVolumeAvailability";
 import { addVolumeToCartTool } from "./tools/addVolumeToCart";
+import { writeFileSync, mkdirSync } from "fs";
+import { join } from "path";
+import { env } from "@/infrastructure/config/env";
 
-const isDev = process.env.NEXT_PUBLIC_APP_ENVIRONMENT === "DEV";
+const isVerbose = env.NEXT_PUBLIC_APP_ENVIRONMENT !== "PRD";
+const isCaptureEnabled = env.NEXT_PUBLIC_APP_ENVIRONMENT === "TEST";
 
-// Shared instances (module-level — constructed once per cold start)
+// ---------------------------------------------------------------------------
+// Capture helper — writes the message history to out/captures/ as a JSON file
+// that can be promoted to a golden or fail eval scenario.
+// Only runs in TEST environment.
+// ---------------------------------------------------------------------------
+function captureMessages(messages: ModelMessage[]): void {
+  try {
+    const dir = join(process.cwd(), "out", "captures");
+    mkdirSync(dir, { recursive: true });
+    const ts = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
+    const payload = { capturedAt: new Date().toISOString(), messages };
+    writeFileSync(join(dir, `${ts}.json`), JSON.stringify(payload, null, 2));
+  } catch {
+    // Never let capture failures break the chat response
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Module-level singletons (constructed once per cold start)
+// ---------------------------------------------------------------------------
 const mangaRepo = new SupabaseMangaRepository();
 const ai = new GeminiAdapter();
 const semanticSearch = new SemanticSearchMangas(mangaRepo, ai);
+const variantRegistry = new BotVariantRegistry();
 
+// ---------------------------------------------------------------------------
+// Tool catalogue — every tool the bot *can* use.
+// The active variant decides which subset is enabled per request.
+// ---------------------------------------------------------------------------
+type ToolEntry = ReturnType<
+  | typeof searchMangaTool
+  | typeof getRecommendationsTool
+  | typeof checkVolumeAvailabilityTool
+  | typeof addVolumeToCartTool
+>;
+
+function buildToolCatalogue(): Record<BotToolName, ToolEntry> {
+  return {
+    search_manga: searchMangaTool(semanticSearch),
+    get_recommendations: getRecommendationsTool(semanticSearch),
+    check_volume_availability: checkVolumeAvailabilityTool(),
+    add_volume_to_cart: addVolumeToCartTool(),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/chat
+// ---------------------------------------------------------------------------
 export async function POST(req: Request) {
   const { messages: uiMessages, profileContext } = await req.json();
   const allMessages = await convertToModelMessages(uiMessages);
 
-  // Trim history to avoid exceeding the model's context window
-  const maxCtx = Number(process.env.CHAT_MAX_CONTEXT_MESSAGES) || 30;
+  const maxCtx = env.CHAT_MAX_CONTEXT_MESSAGES;
   const messages =
     allMessages.length > maxCtx ? allMessages.slice(-maxCtx) : allMessages;
 
+  if (isCaptureEnabled) captureMessages(messages);
+
+  // --- Resolve the active bot variant ---
+  const variant = variantRegistry.resolve(env.CHAT_BOT_VARIANT);
+
+  // Build the tool set from the variant's enabledTools list
+  const catalogue = buildToolCatalogue();
+  const tools = Object.fromEntries(
+    variant.enabledTools.map((name) => [name, catalogue[name]]),
+  ) as Record<string, ToolEntry>;
+
   const result = streamText({
-    model: google(process.env.GEMINI_MODEL || "gemini-2.0-flash"),
-    system: buildSystemPrompt(profileContext),
+    model: google(variant.modelId),
+    system: buildSystemPrompt(variant.systemPrompt, profileContext),
     messages,
-    tools: {
-      search_manga: searchMangaTool(semanticSearch),
-      get_recommendations: getRecommendationsTool(semanticSearch),
-      check_volume_availability: checkVolumeAvailabilityTool(),
-      add_volume_to_cart: addVolumeToCartTool(),
-    },
-    // Allow up to 3 agentic steps (tool call → response → tool call → …)
-    stopWhen: stepCountIs(3),
-    onStepFinish: isDev
+    ...(variant.temperature !== undefined && { temperature: variant.temperature }),
+    tools,
+    stopWhen: stepCountIs(variant.maxSteps),
+    onStepFinish: isVerbose
       ? ({ toolCalls, toolResults, text, stepNumber }) => {
           if (toolCalls?.length) {
-            console.log(`[chat] step=${stepNumber} tools=${toolCalls.map((t) => t.toolName).join(", ")}`);
+            console.log(
+              `[chat] step=${stepNumber} variant=${variant.id} model=${variant.modelId} tools=${toolCalls.map((t) => t.toolName).join(", ")}`,
+            );
             for (const tc of toolCalls) {
               console.log(`  → ${tc.toolName}`, JSON.stringify(tc.input));
             }
           }
           if (toolResults?.length) {
             for (const tr of toolResults) {
-              console.log(`  ← ${tr.toolName}`, JSON.stringify(tr.output).slice(0, 300));
+              console.log(
+                `  ← ${tr.toolName}`,
+                JSON.stringify(tr.output).slice(0, 300),
+              );
             }
           }
           if (text) {
@@ -57,5 +116,31 @@ export async function POST(req: Request) {
       : undefined,
   });
 
-  return result.toUIMessageStreamResponse();
+  return result.toUIMessageStreamResponse({
+    onError: (error: unknown) => {
+      // The SDK wraps retried errors in AI_RetryError — the real status
+      // lives on `lastError`, not the top-level object.
+      const source =
+        error != null &&
+        typeof error === "object" &&
+        "lastError" in error &&
+        error.lastError != null &&
+        typeof error.lastError === "object"
+          ? error.lastError
+          : error;
+
+      const statusCode =
+        source != null &&
+        typeof source === "object" &&
+        "statusCode" in source
+          ? (source as { statusCode: number }).statusCode
+          : undefined;
+
+      if (statusCode === 503) {
+        return "El modelo en uso se encuentra bajo alta demanda. Por favor, inténtalo de nuevo en unos segundos.";
+      }
+
+      return "Ocurrió un error al procesar tu mensaje. Por favor, inténtalo de nuevo.";
+    },
+  });
 }

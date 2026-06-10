@@ -23,12 +23,11 @@ Built with Next.js 16 (App Router), Supabase PostgreSQL + pgvector, Google Gemin
 | ORM | Drizzle ORM 0.45.2 |
 | AI | Vercel AI SDK 6.x + `@ai-sdk/google` (Gemini) |
 | Embeddings | `gemini-embedding-001` (3072 dimensions) |
-| Chat Model | `gemini-2.0-flash` (configurable via `GEMINI_MODEL` env) |
+| Chat Model | Configurable via bot variants (`CHAT_BOT_VARIANT` env) — see below |
 | State | Zustand 5.x (persisted cart + profile stores) |
 | Styling | Tailwind 4.x + Shadcn/UI |
 | Payments | Niubiz (sandbox) |
 | Testing | Vitest 4.x |
-| Container | Docker (multi-stage, node:25-alpine) |
 
 ## Architecture
 
@@ -38,13 +37,14 @@ Hexagonal (Clean Architecture) with domain, ports, adapters, and use cases.
 src/
 ├── core/
 │   ├── domain/
-│   │   ├── entities/         # Manga, Cart, CartItem, UserInsight, MangaWithSimilarity
-│   │   └── ports/            # IMangaRepository, IAIService, IProfileService, IPaymentProvider
+│   │   ├── entities/         # Manga, Cart, CartItem, UserInsight, BotVariant, ...
+│   │   └── ports/            # IMangaRepository, IAIService, IBotVariantRegistry, ...
 │   └── application/
 │       └── use-cases/        # 7 use cases (see below)
 ├── infrastructure/
 │   ├── db/                   # Supabase client, Drizzle schema, SupabaseMangaRepository
 │   ├── ai/                   # GeminiAdapter, system prompts
+│   ├── bot/                  # BotVariantRegistry (single source of truth for bot config)
 │   ├── payment/              # NiubizAdapter
 │   ├── social/               # MALAdapter, RedditAdapter, ProfileServiceAdapter
 │   └── supabase/             # Auth client, middleware, server helpers
@@ -153,7 +153,10 @@ DATABASE_URL=postgresql://postgres:xxx@db.xxx.supabase.co:5432/postgres
 
 # Google AI
 GOOGLE_GENERATIVE_AI_API_KEY=AIza...
-GEMINI_MODEL=gemini-2.0-flash          # optional, defaults to gemini-2.0-flash
+
+# Bot variant — selects the full bot config (model, prompt, tools, temperature).
+# Edit src/infrastructure/bot/BotVariantRegistry.ts to add/rename variants.
+CHAT_BOT_VARIANT=av0.1              # optional, defaults to av0.1
 
 # Chat & Reservation Limits
 NEXT_PUBLIC_CHAT_MAX_TURNS=20           # max user messages per chat session
@@ -207,12 +210,7 @@ Current tests:
 
 ### Docker
 
-```bash
-npm run docker:build   # docker build -t hablemos-manga .
-npm run docker:run     # docker run -p 3000:3000 --env-file .env.local hablemos-manga
-```
-
-Multi-stage build (node:25-alpine): deps → build → standalone runner.
+Removed — deploy target is Vercel.
 
 ## Project Pages
 
@@ -225,10 +223,24 @@ Multi-stage build (node:25-alpine): deps → build → standalone runner.
 
 ## AI Chat System
 
-The chat (`/api/chat`) uses Vercel AI SDK `streamText` with two tools:
+The chat (`/api/chat`) uses Vercel AI SDK `streamText` with a **bot variant system** for A/B testing.
+
+### Bot Variants
+
+A bot variant is a named snapshot of the full bot configuration: model, system prompt, enabled tools, temperature, and max agentic steps.
+
+- **Single source of truth**: `src/infrastructure/bot/BotVariantRegistry.ts`
+- **Selection**: `CHAT_BOT_VARIANT` env var (free-form string, default `av0.1`)
+- **Naming**: `<slot><semver>` — `a*` = baseline, `b*` = challenger. Bump the patch when any component changes.
+
+To add or modify a variant, edit only `BotVariantRegistry.ts`. No other file needs to change.
+
+### Tools
 
 1. **`search_manga`** — Semantic search: user query → Gemini embedding → pgvector `match_mangas` RPC → returns matching mangas with similarity scores.
-2. **`add_to_cart`** — Adds a manga to the user's cart (source: `"ai-suggested"`).
+2. **`get_recommendations`** — Personalized recommendations from genres, mood, or seed title.
+3. **`check_volume_availability`** — Checks stock for specific volumes of a manga.
+4. **`add_volume_to_cart`** — Adds a volume to the user's cart (source: `"ai-suggested"`).
 
 The system prompt instructs the AI to always search before recommending, never invent mangas, and never modify user-added cart items.
 
@@ -271,7 +283,7 @@ Chat features:
 
 ## Known Issues / Notes
 
-- `gemini-2.0-flash` is deprecated (shutdown June 1, 2026). Migrate to `gemini-3-flash-preview` or `gemini-2.5-flash-lite` before then. Set `GEMINI_MODEL` env var to switch.
+- `gemini-2.0-flash` is deprecated (shutdown June 1, 2026). Update the relevant variant in `src/infrastructure/bot/BotVariantRegistry.ts` before then.
 - Embedding model `gemini-embedding-001` is free tier; `gemini-embedding-2-preview` supports multimodal if needed later.
 - Supabase returns pgvector columns as strings. The repository's `parseEmbedding()` method handles this (JSON.parse for strings, passthrough for arrays).
 - Environment variables are validated at startup in production via `instrumentation.ts` → `validateEnv()` (Zod schema).

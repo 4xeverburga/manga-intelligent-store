@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { env } from "@/infrastructure/config/env";
 import "./globals.css";
 
 const inter = Inter({
@@ -28,9 +29,11 @@ export const metadata: Metadata = {
     "tienda manga",
     "anime",
   ],
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
-  ),
+  metadataBase: new URL(env.NEXT_PUBLIC_APP_URL),
+  icons: {
+    icon: "/kekeros-isotype.svg",
+    shortcut: "/kekeros-isotype.svg",
+  },
   openGraph: {
     title: "Hablemos Manga",
     description: "Recomendaciones de manga potenciadas por IA",

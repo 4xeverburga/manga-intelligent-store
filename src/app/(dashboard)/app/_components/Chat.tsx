@@ -38,6 +38,8 @@ export function Chat() {
   return <ChatInner />;
 }
 
+const isTest = process.env.NEXT_PUBLIC_APP_ENVIRONMENT === "TEST";
+
 function ChatInner() {
   const makeOnboardingMessage = useCallback((): UIMessage => {
     const hasProfiles = Object.keys(useProfileStore.getState().profiles).length > 0;
@@ -95,7 +97,7 @@ function ChatInner() {
     []
   );
 
-  const { messages, sendMessage, status, setMessages } = useChat({
+  const { messages, sendMessage, status, setMessages, error } = useChat({
     transport,
     messages: initialMessages,
   });
@@ -160,6 +162,18 @@ function ChatInner() {
             </div>
           )}
 
+          {/* Stream error */}
+          {error && !isStreaming && (
+            <div className="flex gap-3">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#102620] text-xs font-bold text-neon">
+                AI
+              </div>
+              <div className="rounded-lg border border-[#1e2c31] bg-[#061a1c] px-3 py-2 text-base text-[#a1a1aa]">
+                {error.message}
+              </div>
+            </div>
+          )}
+
           {/* Turn limit reached */}
           {limitReached && !isStreaming && (
             <div className="flex flex-col items-center gap-2 py-4">
@@ -190,7 +204,7 @@ function ChatInner() {
                 onKeyDown={handleKeyDown}
                 placeholder="Describe qué manga buscas..."
                 rows={1}
-                className="flex-1 resize-none rounded-lg border border-[#1e2c31] bg-[#061a1c] px-3 py-2 text-base text-white placeholder:text-[#71717a] focus:outline-none focus:ring-2 focus:ring-neon/50"
+                className="flex-1 resize-none rounded-lg border border-[#1e2c31] bg-[#061a1c] px-3 py-2 text-base text-white placeholder:text-[#71717a] focus:outline-none focus:ring-2 focus:ring-neon/50 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 style={{ maxHeight: "120px" }}
                 onInput={(e) => {
                   const target = e.target as HTMLTextAreaElement;
@@ -209,9 +223,17 @@ function ChatInner() {
             </>
           )}
         </div>
-        {!limitReached && userTurns > 0 && (
-          <div className="mx-auto mt-1.5 flex max-w-2xl text-[10px] text-[#71717a]">
-            <span>{userTurns}/{MAX_USER_TURNS} mensajes</span>
+        {(!limitReached && userTurns > 0 || isTest) && (
+          <div className="mx-auto mt-1.5 flex max-w-2xl items-center gap-3 text-[10px] text-[#71717a]">
+            {userTurns > 0 && <span>{userTurns}/{MAX_USER_TURNS} mensajes</span>}
+            {isTest && (
+              <button
+                onClick={handleRestart}
+                className="text-[#36f4a4] underline underline-offset-2 hover:opacity-70"
+              >
+                [TEST] reset
+              </button>
+            )}
           </div>
         )}
       </div>

@@ -1,0 +1,10 @@
+{
+  "id": "multiple-mangas-one-missing",
+  "description": "User wants to add 3 mangas to cart in one message: 2 exist in the DB, 1 does not. Bot should add the 2 available and explain the 3rd failed.",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Agrega el vol 1 de Berserk, el vol 1 de Vagabond, y también el vol 1 de Dragon Ball Super Ultra Instinct Saga"
+    }
+  ]
+}

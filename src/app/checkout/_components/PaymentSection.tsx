@@ -89,14 +89,17 @@ export function PaymentSection({
         </>
       )}
 
-      {process.env.NEXT_PUBLIC_APP_ENVIRONMENT === "DEV" && (
+      {process.env.NEXT_PUBLIC_TEST_CARD_NUMBER && (
         <>
           <p className="mt-3 text-center text-[11px] font-medium text-amber-500">
-            Entorno de desarrollo — No se realizará un cobro real
+            {process.env.NEXT_PUBLIC_APP_ENVIRONMENT === "DEV"
+              ? "Entorno de desarrollo — No se realizará un cobro real"
+              : "Pasarela en modo sandbox — No se realizará un cobro real"}
           </p>
           <p className="mt-1 text-center text-[10px] text-[#71717a]">
-            Tarjeta de prueba: 4474118355632240 &middot; Exp: 03/2028 &middot;
-            CVV: 111
+            Tarjeta de prueba: {process.env.NEXT_PUBLIC_TEST_CARD_NUMBER} &middot; Exp:{" "}
+            {process.env.NEXT_PUBLIC_TEST_CARD_EXP_DATE} &middot; CVV:{" "}
+            {process.env.NEXT_PUBLIC_TEST_CRD_CVV}
           </p>
         </>
       )}

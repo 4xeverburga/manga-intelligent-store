@@ -1,5 +1,3 @@
-import { SYSTEM_PROMPT } from "@/infrastructure/ai/prompts";
-
 type Platform = {
   username: string;
   platform: string;
@@ -13,15 +11,18 @@ export type ProfileContext = {
 };
 
 /**
- * Builds the full system prompt by starting with the base SYSTEM_PROMPT and
+ * Builds the full system prompt by starting with the variant's base prompt and
  * appending the user's social profile data when available.
  *
- * Returns just SYSTEM_PROMPT when no profile is provided (anonymous user).
+ * Returns just basePrompt when no profile is provided (anonymous user).
  */
-export function buildSystemPrompt(profileContext?: ProfileContext): string {
-  if (!profileContext) return SYSTEM_PROMPT;
+export function buildSystemPrompt(
+  basePrompt: string,
+  profileContext?: ProfileContext,
+): string {
+  if (!profileContext) return basePrompt;
 
-  let system = SYSTEM_PROMPT;
+  let system = basePrompt;
 
   // --- Per-platform sections (MAL, Reddit) ---
   // Each platform contributes a markdown block with lists/stats the AI can reference.

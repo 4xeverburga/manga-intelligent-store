@@ -3,3 +3,4 @@ export type { CartItem, CartItemSource } from "./CartItem";
 export type { Cart } from "./Cart";
 export type { UserInsight, PlatformType } from "./UserInsight";
 export type { Order, OrderItem } from "./Order";
+export type { BotVariant, BotToolName } from "./BotVariant";

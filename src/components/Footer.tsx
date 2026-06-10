@@ -4,9 +4,9 @@ export function Footer() {
       <div className="mx-auto flex max-w-[1280px] items-center justify-between px-4 py-8 text-sm text-[#a1a1aa] md:px-8 lg:px-16">
         <p>&copy; {new Date().getFullYear()} Hablemos Manga</p>
         <p>
-          Powered by{" "}
-          <span className="font-medium text-neon">Gemini AI</span> +{" "}
-          <span className="font-medium text-white">pgvector</span>
+          Developed by {" "}
+          <span className="font-medium text-neon">4xeverburga</span> +{" "}
+          <span className="font-medium text-white">a healthy amount of vibes</span>
         </p>
       </div>
     </footer>
