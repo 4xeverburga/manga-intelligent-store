@@ -11,3 +11,4 @@ export type {
   PaymentResult,
 } from "./IPaymentProvider";
 export type { IOrderService, StockCheckResult, ReservationResult } from "./IOrderService";
+export type { IBotVariantRegistry } from "./IBotVariantRegistry";

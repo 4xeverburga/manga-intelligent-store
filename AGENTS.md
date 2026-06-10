@@ -20,7 +20,7 @@ src/
 │   │   └── ports/              → Port interfaces consumed by use cases
 │   └── application/
 │       └── use-cases/          → Business logic classes with constructor DI
-├── infrastructure/             → Adapters: db, ai, payment, social, config
+├── infrastructure/             → Adapters: db, ai, payment, social, config, bot
 ├── app/                        → Next.js App Router (pages, layouts, route handlers)
 │   ├── api/                    → Thin route handlers — delegate to use cases
 │   └── (routes)/               → Pages, layouts, co-located route components
@@ -94,18 +94,38 @@ export class SearchMangas {
 - Use Supabase `.rpc()` for custom PostgreSQL functions
 - Supabase returns pgvector columns as strings — always parse with a dedicated helper
 
+### Bot Variant System
+
+The AI chat bot is configured via **bot variants**. A variant is a named snapshot of the full bot: model, system prompt, enabled tools, temperature, and max agentic steps.
+
+- **Entity**: `BotVariant` (`src/core/domain/entities/BotVariant.ts`) — pure interface.
+- **Port**: `IBotVariantRegistry` (`src/core/domain/ports/IBotVariantRegistry.ts`) — `resolve(variantId) → BotVariant`.
+- **Adapter**: `BotVariantRegistry` (`src/infrastructure/bot/BotVariantRegistry.ts`) — **single source of truth** for all variant definitions.
+- **Selection**: `CHAT_BOT_VARIANT` env var (free-form string, validated at runtime by the registry).
+
+To add, rename, or modify a variant, **edit only `src/infrastructure/bot/BotVariantRegistry.ts`**. No other file needs to change.
+
+Naming convention: `<slot><semver>` — `a*` = baseline, `b*` = challenger. Bump the patch when **any** component changes (e.g., `av0.1` → `av0.2`).
+
 ### Styling
 
-- Tailwind utility classes — prefer dark theme defaults
-- Shadcn/UI components live in `src/components/ui/`
+**`DESIGN.md` is the single source of truth for all visual decisions.** Read it before writing or modifying any UI code — no exceptions.
+
+- Tailwind utility classes — dark-first, using the exact hex values from `DESIGN.md`
+- Shadcn/UI components live in `src/components/ui/` — override default tokens (e.g., `destructive`) with design-system colors
 - Conditional classes via `cn()` from `@/lib/utils`
-- Follow `DESIGN.md` for colors, typography, and component patterns
+- **No warm colors** (red, orange, yellow) — the palette is strictly cool (greens, teals, zinc neutrals)
+- Surface hierarchy: Void `#000` → Deep Teal `#02090A` → Dark Forest `#061A1C` → Forest `#102620`
+- Accent: Neon Green `#36F4A4` — focus rings and small highlights only
+- Text: White `#FFF` primary, `#A1A1AA` muted, `#71717A` tertiary
+- Borders: `#1E2C31` on dark surfaces
 
 ### Environment Variables
 
 - Validated at startup via `instrumentation.ts` → Zod schema
 - See `.env.example` for the full list of required variables
 - Fail fast on missing or invalid config — never silently fall back
+- **No defaults** — every variable must be explicitly defined in the environment. Never use `.default()` or `?.` fallbacks in the Zod schema or in application code.
 
 ### Testing
 
@@ -167,8 +187,6 @@ npm run db:generate     # Drizzle — generate migrations
 npm run db:migrate      # Drizzle — apply migrations
 npm run db:studio       # Drizzle Studio GUI
 npm run db:seed         # Seed script
-npm run docker:build    # Docker multi-stage build
-npm run docker:run      # Run container with .env.local
 ```
 
 ## Key Principles

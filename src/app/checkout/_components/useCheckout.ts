@@ -258,6 +258,7 @@ export function useCheckout() {
         merchantlogo: `${window.location.origin}/logo.png`,
         formbuttoncolor: "#36f4a4",
         action: `${window.location.origin}/api/checkout/callback`,
+
         complete(params: Record<string, string>) {
           handleVerify(params.transactionToken, merchantId, pn);
         },

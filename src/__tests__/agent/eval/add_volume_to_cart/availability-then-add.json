@@ -1,0 +1,7 @@
+{
+  "id": "availability-then-add",
+  "description": "User asks to add a manga volume directly. Bot should call check_volume_availability first, then add_volume_to_cart if available. Gantz is not in the DB so the tool should return not found.",
+  "messages": [
+    { "role": "user", "content": "Agrega el volumen 1 de Gantz al carrito" }
+  ]
+}

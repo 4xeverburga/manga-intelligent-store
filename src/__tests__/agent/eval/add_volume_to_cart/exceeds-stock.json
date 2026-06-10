@@ -1,0 +1,7 @@
+{
+  "id": "exceeds-stock",
+  "description": "User asks to add more copies than available stock for a volume",
+  "messages": [
+    { "role": "user", "content": "Agrega 50 copias del volumen 1 de Claymore" }
+  ]
+}

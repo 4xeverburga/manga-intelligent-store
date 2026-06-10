@@ -59,8 +59,8 @@ export function DashboardHeader() {
         )}
       </Button>
       <Sheet open={rightOpen} onOpenChange={setRightOpen}>
-        <SheetContent side="right" className="w-[320px] bg-[#02090a] border-[#1e2c31] p-0">
-          <CartSidebar />
+        <SheetContent side="right" className="w-[320px] bg-[#02090a] border-[#1e2c31] p-0" showCloseButton={false}>
+          <CartSidebar onClose={() => setRightOpen(false)} />
         </SheetContent>
       </Sheet>
 
